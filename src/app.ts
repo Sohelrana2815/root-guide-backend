@@ -1,24 +1,10 @@
-import express, {
-  type Application,
-  type Request,
-  type Response,
-} from "express";
-import cors from "cors";
-const app: Application = express();
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true,
-  })
-);
-
-//parser
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+import express, { Request, Response } from "express";
+import httpStatus from "http-status";
+const app = express();
 
 app.get("/", (req: Request, res: Response) => {
-  res.send({
-    Message: "Ph health care server..",
+  res.status(httpStatus.OK).json({
+    message: "Welcome to Root Guide Backend",
   });
 });
 
