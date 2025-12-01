@@ -2,6 +2,8 @@
   "name": "root-guide-backend",
   "version": "1.0.0",
   "scripts": {
+    "start": "node ./dist/server.js",
+    "build": "tsc",
     "dev": "ts-node-dev --respawn --transpile-only --watch src src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
