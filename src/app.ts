@@ -1,18 +1,24 @@
-import express, { Request, Response } from "express";
 import cors from "cors";
-import httpStatus from "http-status";
-import { envVars } from "./app/config/env";
+import express, { Request, Response } from "express";
+import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
+import notFound from "./app/middlewares/notFound";
+import { router } from "./app/routes";
+
 const app = express();
-app.use(
-  cors({
-    origin: envVars.FRONTEND_URL,
-    credentials: true,
-  })
-);
+
+app.use(express.json());
+app.use(cors());
+
+app.use("/api/", router);
+
 app.get("/", (req: Request, res: Response) => {
-  res.status(httpStatus.OK).json({
-    message: "Welcome to Root Guide Backend",
+  res.status(200).json({
+    message: "Welcome to Tour Management System Backend",
   });
 });
+
+app.use(globalErrorHandler);
+
+app.use(notFound);
 
 export default app;
