@@ -13,8 +13,9 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "types": ["node"]
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types", "./src/app/types"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/app/types/express.d.ts"],
   "exclude": ["node_modules"]
 }

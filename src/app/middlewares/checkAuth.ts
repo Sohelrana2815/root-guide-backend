@@ -6,6 +6,7 @@ import { verifyToken } from "../utils/jwt";
 import AppError from "../errorHelpers/AppError";
 import { envVars } from "../config/env";
 import { User } from "../modules/user/user.model";
+import { AuthPayload } from "../auth/interface";
 
 export const checkAuth =
   (...authRoles: string[]) =>
@@ -22,7 +23,10 @@ export const checkAuth =
         envVars.JWT_ACCESS_SECRET
       ) as JwtPayload;
 
-      const isUserExist = await User.findOne({ email: verifiedToken.email });
+      // Extract only the email from the JWT payload
+      const email = verifiedToken.email;
+
+      const isUserExist = await User.findOne({ email });
 
       if (!isUserExist) {
         throw new AppError(httpStatus.BAD_REQUEST, "User does not exist");
@@ -43,10 +47,19 @@ export const checkAuth =
       if (!authRoles.includes(verifiedToken.role)) {
         throw new AppError(403, "You are not permitted to view this route!!!");
       }
-      req.user = verifiedToken;
+
+      // FIX: Cast the verified token to our custom AuthPayload type with userId
+      // The global index.d.ts ensures 'req.user' exists
+      req.user = {
+        userId: isUserExist._id,
+        email: verifiedToken.email,
+        role: verifiedToken.role,
+        iat: verifiedToken.iat,
+        exp: verifiedToken.exp,
+      } as AuthPayload;
       next();
     } catch (error) {
-      console.log("jwt error", error);
+      // JWT verification failed or other auth error
       next(error);
     }
   };
