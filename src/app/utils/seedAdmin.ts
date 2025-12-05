@@ -3,18 +3,18 @@ import { User } from "../modules/user/user.model";
 import { envVars } from "../config/env";
 import { IAuthProvider, IUser, Role } from "../modules/user/user.interface";
 
-export const seedSuperAdmin = async () => {
+export const seedAdmin = async () => {
   try {
-    const isSuperAdminExist = await User.findOne({
+    const isAdminExist = await User.findOne({
       email: envVars.ADMIN_EMAIL,
     });
 
-    if (isSuperAdminExist) {
-      console.log("Super Admin Already Exists!");
+    if (isAdminExist) {
+      console.log("Admin Already Exists!");
       return;
     }
 
-    console.log("Trying to create Super Admin...");
+    console.log("Trying to create Admin...");
 
     const hashedPassword = await bcryptjs.hash(
       envVars.ADMIN_PASSWORD,
@@ -27,7 +27,7 @@ export const seedSuperAdmin = async () => {
     };
 
     const payload: IUser = {
-      name: "Super admin",
+      name: "Admin",
       role: Role.ADMIN,
       email: envVars.ADMIN_EMAIL,
       password: hashedPassword,
@@ -35,9 +35,9 @@ export const seedSuperAdmin = async () => {
       auths: [authProvider],
     };
 
-    const superadmin = await User.create(payload);
-    console.log("Super Admin Created Successfuly! \n");
-    console.log(superadmin);
+    const admin = await User.create(payload);
+    console.log("Admin Created Successfully! \n");
+    console.log(admin);
   } catch (error) {
     console.log(error);
   }
