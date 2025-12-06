@@ -27,7 +27,7 @@ export interface IUser {
   password?: string;
   isVerified: boolean;
   passwordChangedAt?: Date; // To invalidate old tokens upon password change.
-
+  phoneNumber?: string;
   // 2. Role & Status Management
   role: Role;
   userStatus?: UserStatus;

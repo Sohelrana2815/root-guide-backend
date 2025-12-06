@@ -40,11 +40,7 @@ export const createTourZodSchema = z.object({
     .min(1, "At least 1 guest is required"),
 
   // 4. Images
-  images: z
-    .array(z.url("Image must be a valid URL"), {
-      error: "At least one image is required",
-    })
-    .min(1, "Please upload at least one image of the tour"),
+  images: z.url({ error: "At least one image is required" }).optional(),
 
   // 5. Optional Fields
   // Guide ID is typically handled by the auth middleware (req.user),
@@ -53,3 +49,5 @@ export const createTourZodSchema = z.object({
 
   isActive: z.boolean().optional().default(true),
 });
+
+export const updateTourZodSchema = createTourZodSchema.partial();

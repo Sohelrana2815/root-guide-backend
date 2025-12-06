@@ -1,7 +1,7 @@
 import express from "express";
 import { TourControllers } from "./tour.controller";
 import { validateRequest } from "@/app/middlewares/validateRequest";
-import { createTourZodSchema } from "./tour.validation";
+import { createTourZodSchema, updateTourZodSchema } from "./tour.validation";
 import { checkAuth } from "@/app/middlewares/checkAuth";
 import { Role } from "../user/user.interface";
 const router = express.Router();
@@ -12,5 +12,18 @@ router.post(
   checkAuth(Role.GUIDE),
   TourControllers.createTour
 );
+
+router.get("/", checkAuth(Role.ADMIN), TourControllers.getAllTours);
+
+router.get("/my-tours", checkAuth(Role.GUIDE), TourControllers.getMyTours);
+
+router.patch(
+  "/:id",
+  validateRequest(updateTourZodSchema),
+  checkAuth(Role.GUIDE),
+  TourControllers.updateTour
+);
+
+router.delete("/:id", checkAuth(Role.GUIDE), TourControllers.deleteTour);
 
 export const TourRoutes = router;
