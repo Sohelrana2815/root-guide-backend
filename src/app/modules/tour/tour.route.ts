@@ -28,7 +28,10 @@ router.get(
   checkAuth(...Object.values(Role)),
   TourControllers.getSingleTour
 );
-router.patch("/:id", checkAuth(Role.GUIDE), TourControllers.deActivateTour);
+router.patch("/:id/deactivate", checkAuth(Role.GUIDE), TourControllers.deActivateTour);
+
+
+
 router.patch(
   "/:id/reactivate",
   checkAuth(Role.GUIDE),
