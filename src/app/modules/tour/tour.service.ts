@@ -20,10 +20,15 @@ const getAllTours = async () => {
   return tours;
 };
 
-const getMyTours = async(guideId:Types.ObjectId)=>{
-  const tours = await Tour.find({guideId});
+const getMyTours = async (guideId: Types.ObjectId) => {
+  const tours = await Tour.find({ guideId });
   return tours;
-} 
+};
+
+const getSingleTour = async (tourId: string) => {
+  const tour = await Tour.findById(tourId);
+  return tour;
+};
 
 const updateTour = async (
   tourId: string,
@@ -54,6 +59,56 @@ const updateTour = async (
   return updatedTour;
 };
 
+const deActivateTour = async (tourId: string, guideId: Types.ObjectId) => {
+  const tour = await Tour.findById(tourId);
+
+  if (!tour) {
+    throw new AppError(httpStatus.NOT_FOUND, "Tour not found");
+  }
+
+  if (tour.guideId.toString() !== guideId.toString()) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You can only deactivate your own tours"
+    );
+  }
+
+  // If already deactivated, return the tour (idempotent)
+  if (!tour.isActive) {
+    return tour;
+  }
+
+  // Set explicitly to false (deactivate) and return updated document
+  tour.isActive = false;
+  const updatedTour = await tour.save();
+  return updatedTour;
+};
+
+const reactivateTour = async (tourId: string, guideId: Types.ObjectId) => {
+  const tour = await Tour.findById(tourId);
+
+  if (!tour) {
+    throw new AppError(httpStatus.NOT_FOUND, "Tour not found");
+  }
+
+  if (tour.guideId.toString() !== guideId.toString()) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You can only reactivate your own tours"
+    );
+  }
+
+  // If already active, return the tour (idempotent)
+  if (tour.isActive) {
+    return tour;
+  }
+
+  // Set explicitly to true (reactivate) and return updated document
+  tour.isActive = true;
+  const updatedTour = await tour.save();
+  return updatedTour;
+};
+
 const deleteTour = async (tourId: string, guideId: Types.ObjectId) => {
   const tour = await Tour.findById(tourId);
 
@@ -77,5 +132,8 @@ export const TourServices = {
   getAllTours,
   getMyTours,
   updateTour,
+  deActivateTour,
+  reactivateTour,
   deleteTour,
+  getSingleTour,
 };

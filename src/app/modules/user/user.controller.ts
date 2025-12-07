@@ -23,8 +23,7 @@ const updateUser = catchAsync(
     const userId = req.params.id;
     const verifiedToken = req.user as JwtPayload;
     const payload = req.body;
-    const user = await UserServices.updateUser(userId,payload,verifiedToken);
-
+    const user = await UserServices.updateUser(userId, payload, verifiedToken);
 
     sendResponse(res, {
       success: true,
@@ -35,7 +34,23 @@ const updateUser = catchAsync(
   }
 );
 
+const deleteUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.id;
+    const verifiedToken = req.user as JwtPayload;
+    const result = await UserServices.deleteUser(userId, verifiedToken);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "User soft deleted successfully",
+      data: result,
+    });
+  }
+);
+
 export const UserControllers = {
   getAllUsers,
-  updateUser
+  updateUser,
+  deleteUser,
 };

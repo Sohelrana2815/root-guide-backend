@@ -7,6 +7,12 @@ import httpStatus from "http-status";
 import { envVars } from "@/app/config/env";
 import bcryptjs from "bcryptjs";
 
+const getAllUsers = async () => {
+  const users = await User.find({});
+  return {
+    data: users,
+  };
+};
 const updateUser = async (
   userId: string,
   payload: Partial<IUser>,
@@ -56,14 +62,30 @@ const updateUser = async (
   return newUpdatedUser;
 };
 
-const getAllUsers = async () => {
-  const users = await User.find({});
-  return {
-    data: users,
-  };
+const deleteUser = async (userId: string, decodedToken: JwtPayload) => {
+  // Only admin can delete users
+  if (decodedToken.role !== Role.ADMIN) {
+    throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
+  }
+
+  const isUserExist = await User.findById(userId);
+
+  if (!isUserExist) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  // Soft delete: Set isDeleted flag to true
+  const deletedUser = await User.findByIdAndUpdate(
+    userId,
+    { isDeleted: true },
+    { new: true, runValidators: true }
+  );
+
+  return deletedUser;
 };
 
 export const UserServices = {
   getAllUsers,
   updateUser,
+  deleteUser,
 };

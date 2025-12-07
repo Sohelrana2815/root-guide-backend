@@ -13,7 +13,7 @@ router.post(
   TourControllers.createTour
 );
 
-router.get("/", checkAuth(Role.ADMIN), TourControllers.getAllTours);
+router.get("/", TourControllers.getAllTours);
 
 router.get("/my-tours", checkAuth(Role.GUIDE), TourControllers.getMyTours);
 
@@ -23,7 +23,17 @@ router.patch(
   checkAuth(Role.GUIDE),
   TourControllers.updateTour
 );
-
+router.get(
+  "/:id",
+  checkAuth(...Object.values(Role)),
+  TourControllers.getSingleTour
+);
+router.patch("/:id", checkAuth(Role.GUIDE), TourControllers.deActivateTour);
+router.patch(
+  "/:id/reactivate",
+  checkAuth(Role.GUIDE),
+  TourControllers.reactivateTour
+);
 router.delete("/:id", checkAuth(Role.GUIDE), TourControllers.deleteTour);
 
 export const TourRoutes = router;

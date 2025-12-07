@@ -54,6 +54,23 @@ const getMyTours = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getSingleTour = catchAsync(async (req: Request, res: Response) => {
+  const authUser = req.user as AuthPayload;
+
+  if (!authUser?.userId) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "User ID not found in request");
+  }
+  const { id } = req.params;
+
+  const result = await TourServices.getSingleTour(id);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Single tour retrieved successfully",
+    data: result,
+  });
+});
+
 const updateTour = catchAsync(async (req: Request, res: Response) => {
   const authUser = req.user as AuthPayload;
 
@@ -68,6 +85,42 @@ const updateTour = catchAsync(async (req: Request, res: Response) => {
     statusCode: 200,
     success: true,
     message: "Tour updated successfully",
+    data: result,
+  });
+});
+
+const deActivateTour = catchAsync(async (req: Request, res: Response) => {
+  const authUser = req.user as AuthPayload;
+
+  if (!authUser?.userId) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "User ID not found in request");
+  }
+
+  const { id } = req.params;
+  const result = await TourServices.deActivateTour(id, authUser.userId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Tour deactivated successfully",
+    data: result,
+  });
+});
+
+const reactivateTour = catchAsync(async (req: Request, res: Response) => {
+  const authUser = req.user as AuthPayload;
+
+  if (!authUser?.userId) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "User ID not found in request");
+  }
+
+  const { id } = req.params;
+  const result = await TourServices.reactivateTour(id, authUser.userId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Tour reactivated successfully",
     data: result,
   });
 });
@@ -95,5 +148,8 @@ export const TourControllers = {
   getAllTours,
   getMyTours,
   updateTour,
+  deActivateTour,
+  reactivateTour,
   deleteTour,
+  getSingleTour,
 };

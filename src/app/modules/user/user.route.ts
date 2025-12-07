@@ -6,8 +6,17 @@ import { validateRequest } from "@/app/middlewares/validateRequest";
 import { updateUserZodSchema } from "./user.validation";
 
 const router = Router();
-
+// get all users
 router.get("/all-users", checkAuth(Role.ADMIN), UserControllers.getAllUsers);
-router.patch("/:id",validateRequest(updateUserZodSchema), checkAuth(...Object.values(Role)), UserControllers.updateUser);
+// update users
+router.patch(
+  "/:id",
+  validateRequest(updateUserZodSchema),
+  checkAuth(...Object.values(Role)),
+  UserControllers.updateUser
+);
+
+// soft delte user
+router.delete('/:id', checkAuth(Role.ADMIN), UserControllers.deleteUser);
 
 export const UserRoutes = router;
