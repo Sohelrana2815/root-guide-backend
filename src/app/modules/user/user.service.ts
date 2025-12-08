@@ -30,6 +30,17 @@ const updateUser = async (
    * only admin can block, delete make user admin
    */
 
+  // Prevent email changes through this endpoint
+  if (payload.email) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Email cannot be updated");
+  }
+
+  // Only admin or the user themself can update the user
+  const requesterId = String((decodedToken as any).userId ?? "");
+  if ((decodedToken.role as unknown) !== Role.ADMIN && requesterId !== String(userId)) {
+    throw new AppError(httpStatus.FORBIDDEN, "You are not authorized to update this user");
+  }
+
   if (payload.role) {
     if (
       decodedToken.role === Role.TOURIST ||
@@ -51,7 +62,7 @@ const updateUser = async (
   if (payload.password) {
     payload.password = await bcryptjs.hash(
       payload.password,
-      envVars.BCRYPT_SALT_ROUND
+      Number(envVars.BCRYPT_SALT_ROUND)
     );
   }
 

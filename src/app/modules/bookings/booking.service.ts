@@ -7,6 +7,8 @@ import { Payment } from "../payment/payment.model";
 import { PAYMENT_STATUS } from "../payment/payment.interface";
 import { User } from "../user/user.model";
 import { Types } from "mongoose";
+import { SSLService } from "../sslCommerz/sslCommerz.service";
+import { ISSLCommerz } from "../sslCommerz/sslCommerz.interface";
 
 // ============================================
 // HELPER FUNCTION: Generate Transaction ID
@@ -23,96 +25,119 @@ const createBooking = async (
   touristId: Types.ObjectId
 ) => {
   const transactionId = getTransactionId();
+  const session = await Booking.startSession();
 
-  // Validate tourist exists and has required information
-  const tourist = await User.findById(touristId);
+  try {
+    let resultBooking: any = null;
 
-  if (!tourist) {
-    throw new AppError(httpStatus.NOT_FOUND, "Tourist not found");
+    await session.withTransaction(async () => {
+      // Validate tourist exists and has required information
+      const tourist = await User.findById(touristId).session(session);
+
+      if (!tourist) {
+        throw new AppError(httpStatus.NOT_FOUND, "Tourist not found");
+      }
+
+      // Enforce phone number requirement (from profile)
+      if (!tourist.phoneNumber) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          "Please add a phone number to your profile before creating a booking"
+        );
+      }
+
+      if (!tourist.address) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          "Please add an address to your profile before creating a booking"
+        );
+      }
+
+      // Validate tour exists
+      const tour = await Tour.findById(payload.tourId).session(session);
+
+      if (!tour) {
+        throw new AppError(httpStatus.NOT_FOUND, "Tour not found");
+      }
+
+      // Validate guest count
+      if (!payload.guestCount || payload.guestCount < 1) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          "Guest count must be at least 1"
+        );
+      }
+
+      if (payload.guestCount > (tour.maxGroupSize ?? Number.MAX_SAFE_INTEGER)) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          `Guest count cannot exceed maximum group size of ${tour.maxGroupSize}`
+        );
+      }
+
+      // Calculate total price
+      const totalPrice = Number(tour.price) * Number(payload.guestCount);
+
+      // Create booking document within session
+      const bookingDoc = new Booking({
+        touristId,
+        tourId: payload.tourId,
+        guideId: tour.guideId,
+        guestCount: payload.guestCount,
+        // bookingDate: payload.bookingDate,
+        totalPrice,
+        status: BookingStatus.PENDING,
+      });
+
+      const createdBooking = await bookingDoc.save({ session });
+
+      // Create payment record within session
+      const paymentDoc = new Payment({
+        bookingId: createdBooking._id,
+        status: PAYMENT_STATUS.UNPAID,
+        transactionId,
+        amount: totalPrice,
+      });
+
+      const createdPayment = await paymentDoc.save({ session });
+
+      // Link payment to booking and persist
+      createdBooking.paymentId = createdPayment._id;
+      await createdBooking.save({ session });
+
+      // Populate the booking to return
+      resultBooking = await Booking.findById(createdBooking._id)
+        .populate("touristId", "name email phoneNumber")
+        .populate("tourId", "title price duration")
+        .populate("guideId", "name email")
+        .populate("paymentId")
+        .session(session);
+
+      const userAddress = tourist.address || "N/A";
+      const userEmail = tourist.email || "N/A";
+      const userPhoneNumber = tourist.phoneNumber || "N/A";
+      const userName = tourist.name || "N/A";
+
+      const sslPayload: ISSLCommerz = {
+        address: userAddress,
+        email: userEmail,
+        phoneNumber: userPhoneNumber,
+        name: userName,
+        amount: totalPrice,
+        transactionId: transactionId,
+      };
+      const sslPayment = await SSLService.sslPaymentInit(sslPayload);
+      session.endSession();
+      return {
+        payment: sslPayment,
+        booking: resultBooking,
+      };
+    });
+  } catch (error: any) {
+    // withTransaction will abort on thrown error; ensure session closed
+    session.endSession();
+    throw error;
   }
-
-  //   if (!tourist.address) {
-  //     throw new AppError(
-  //       httpStatus.BAD_REQUEST,
-  //       "Please provide your address in your profile to proceed with booking"
-  //     );
-  //   }
-
-  // Validate tour exists
-  const tour = await Tour.findById(payload.tourId);
-
-  if (!tour) {
-    throw new AppError(httpStatus.NOT_FOUND, "Tour not found");
-  }
-
-  // if (!tour.price) {
-  //   throw new AppError(httpStatus.BAD_REQUEST, "Tour price not found");
-  // }
-
-  // Validate booking date is in future
-  // if (!payload.bookingDate) {
-  //   throw new AppError(httpStatus.BAD_REQUEST, "Booking date is required");
-  // }
-  // const bookingDate = new Date(payload.bookingDate);
-
-  // if (bookingDate < new Date()) {
-  //   throw new AppError(
-  //     httpStatus.BAD_REQUEST,
-  //     "Booking date must be in the future"
-  //   );
-  // }
-
-  // Validate guest count
-  if (!payload.guestCount || payload.guestCount < 1) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "Guest count must be at least 1"
-    );
-  }
-
-  if (payload.guestCount > tour.maxGroupSize) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      `Guest count cannot exceed maximum group size of ${tour.maxGroupSize}`
-    );
-  }
-
-  // Calculate total price
-  const totalPrice = Number(tour.price) * Number(payload.guestCount);
-
-  // Create booking
-  const booking = await Booking.create({
-    touristId,
-    tourId: payload.tourId,
-    guideId: tour.guideId,
-    guestCount: payload.guestCount,
-    // bookingDate: payload.bookingDate,
-    totalPrice,
-    status: BookingStatus.PENDING,
-  });
-
-  // Create payment record
-  const payment = await Payment.create({
-    bookingId: booking._id,
-    status: PAYMENT_STATUS.UNPAID,
-    transactionId,
-    amount: totalPrice,
-  });
-
-  // Update booking with payment ID
-  const updatedBooking = await Booking.findByIdAndUpdate(
-    booking._id,
-    {
-      paymentId: payment._id,
-    },
-    { new: true }
-  )
-    .populate("touristId", "name email")
-    .populate("tourId", "title price duration")
-    .populate("guideId", "name email")
-    .populate("paymentId");
-
-  return updatedBooking;
 };
 
 // ============================================

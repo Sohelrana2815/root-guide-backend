@@ -93,4 +93,12 @@ export const updateUserZodSchema = z.object({
       error: "Preferences must be at least 1 item long",
     })
     .optional(),
+  phoneNumber: z
+    .string({ error: "Phone number must be a string" })
+    .min(7, { error: "Phone number must be at least 7 characters long" })
+    .max(20, { error: "Phone number cannot exceed 20 characters" })
+    .regex(/^\+?[0-9\s-]{7,20}$/, {
+      message: "Phone number must contain only digits, spaces, hyphens and an optional leading +",
+    })
+    .optional(),
 });
