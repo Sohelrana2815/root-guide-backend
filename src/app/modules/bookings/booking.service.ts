@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from "http-status";
 import { Booking } from "./booking.model";
 import AppError from "@/app/errorHelpers/AppError";
@@ -9,13 +10,11 @@ import { User } from "../user/user.model";
 import { Types } from "mongoose";
 import { SSLService } from "../sslCommerz/sslCommerz.service";
 import { ISSLCommerz } from "../sslCommerz/sslCommerz.interface";
+import { getTransactionId } from "@/app/utils/getTransactionId";
 
 // ============================================
 // HELPER FUNCTION: Generate Transaction ID
 // ============================================
-const getTransactionId = () => {
-  return `TXN-${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-};
 
 // ============================================
 // 1. CREATE BOOKING
@@ -29,6 +28,9 @@ const createBooking = async (
 
   try {
     let resultBooking: any = null;
+    let createdPaymentId: Types.ObjectId | null = null;
+    let sslPaymentResponse: any = null;
+    let sslPayload: ISSLCommerz | null = null;
 
     await session.withTransaction(async () => {
       // Validate tourist exists and has required information
@@ -100,6 +102,7 @@ const createBooking = async (
       });
 
       const createdPayment = await paymentDoc.save({ session });
+      createdPaymentId = createdPayment._id;
 
       // Link payment to booking and persist
       createdBooking.paymentId = createdPayment._id;
@@ -113,26 +116,38 @@ const createBooking = async (
         .populate("paymentId")
         .session(session);
 
-      const userAddress = tourist.address || "N/A";
-      const userEmail = tourist.email || "N/A";
-      const userPhoneNumber = tourist.phoneNumber || "N/A";
-      const userName = tourist.name || "N/A";
-
-      const sslPayload: ISSLCommerz = {
-        address: userAddress,
-        email: userEmail,
-        phoneNumber: userPhoneNumber,
-        name: userName,
+      // Prepare SSL payload to call AFTER transaction commits
+      sslPayload = {
+        address: tourist.address || "N/A",
+        email: tourist.email || "N/A",
+        phoneNumber: tourist.phoneNumber || "N/A",
+        name: tourist.name || "N/A",
         amount: totalPrice,
         transactionId: transactionId,
-      };
-      const sslPayment = await SSLService.sslPaymentInit(sslPayload);
-      session.endSession();
-      return {
-        payment: sslPayment,
-        booking: resultBooking,
-      };
+      } as ISSLCommerz;
     });
+
+    // Call external payment gateway after DB transaction commits
+    try {
+      if (sslPayload) {
+        sslPaymentResponse = await SSLService.sslPaymentInit(sslPayload);
+      }
+    } catch (sslError: any) {
+      // Mark payment as failed if gateway call fails
+      if (createdPaymentId) {
+        await Payment.findByIdAndUpdate(createdPaymentId, {
+          status: PAYMENT_STATUS.FAILED,
+        });
+      }
+      session.endSession();
+      throw sslError;
+    }
+
+    session.endSession();
+    return {
+      paymentUrl: sslPaymentResponse.GatewayPageURL,
+      booking: resultBooking,
+    };
   } catch (error: any) {
     // withTransaction will abort on thrown error; ensure session closed
     session.endSession();

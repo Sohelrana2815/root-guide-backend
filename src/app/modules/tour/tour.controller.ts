@@ -8,7 +8,7 @@ import { AuthPayload } from "@/app/auth/interface";
 
 const createTour = catchAsync(async (req: Request, res: Response) => {
   const authUser = req.user as AuthPayload;
-
+  // throw new Error("fake error");
   if (!authUser?.userId) {
     throw new AppError(httpStatus.UNAUTHORIZED, "User ID not found in request");
   }
@@ -17,6 +17,7 @@ const createTour = catchAsync(async (req: Request, res: Response) => {
   const tourData = {
     ...req.body,
     guideId,
+    image: req.file?.path,
   };
 
   const result = await TourServices.createTour(tourData);
@@ -79,7 +80,12 @@ const updateTour = catchAsync(async (req: Request, res: Response) => {
   }
 
   const { id } = req.params;
-  const result = await TourServices.updateTour(id, authUser.userId, req.body);
+  const updatePayload = {
+    ...req.body,
+    image: req.file?.path,
+  };
+
+  const result = await TourServices.updateTour(id, authUser.userId, updatePayload);
 
   sendResponse(res, {
     statusCode: 200,

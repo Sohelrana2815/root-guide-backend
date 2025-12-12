@@ -41,7 +41,7 @@ router.get(
 // Returns all bookings for the guide's tours
 router.get(
   "/guide-bookings",
-  checkAuth(Role.GUIDE),
+  checkAuth(Role.GUIDE || Role.ADMIN),
   BookingControllers.getGuideBookings
 );
 

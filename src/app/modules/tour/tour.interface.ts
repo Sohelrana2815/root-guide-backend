@@ -20,7 +20,7 @@ export interface ITour {
   duration: number; // In hours (e.g., 4.5)
   meetingPoint: string; // Specific address
   maxGroupSize: number;
-  images: string;
+  image: string;
 
   // 5. Status & Statistics (Stored fields, not virtuals)
   isActive: boolean; // Default: true. Allows guide to "turn off" the listing.

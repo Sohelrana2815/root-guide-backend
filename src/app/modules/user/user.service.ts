@@ -4,6 +4,7 @@ import { IUser, Role } from "./user.interface";
 import { User } from "./user.model";
 import AppError from "@/app/errorHelpers/AppError";
 import httpStatus from "http-status";
+import { deleteImageFromCLoudinary } from "@/app/config/cloudinary.config";
 import { envVars } from "@/app/config/env";
 import bcryptjs from "bcryptjs";
 
@@ -37,25 +38,22 @@ const updateUser = async (
 
   // Only admin or the user themself can update the user
   const requesterId = String((decodedToken as any).userId ?? "");
-  if ((decodedToken.role as unknown) !== Role.ADMIN && requesterId !== String(userId)) {
-    throw new AppError(httpStatus.FORBIDDEN, "You are not authorized to update this user");
+  const requesterRole = (decodedToken as any).role as Role | undefined;
+  if (requesterRole !== Role.ADMIN && requesterId !== String(userId)) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to update this user"
+    );
   }
 
-  if (payload.role) {
+  // Fields only admin can change
+  const adminOnlyFields = ["role", "isDeleted", "isVerified", "userStatus"];
+  for (const f of adminOnlyFields) {
     if (
-      decodedToken.role === Role.TOURIST ||
-      decodedToken.role === Role.GUIDE
+      Object.prototype.hasOwnProperty.call(payload, f) &&
+      requesterRole !== Role.ADMIN
     ) {
-      throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
-    }
-
-    if (payload.userStatus === payload.isDeleted || payload.isVerified) {
-      if (
-        decodedToken.role === Role.TOURIST ||
-        decodedToken.role === Role.GUIDE
-      ) {
-        throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
-      }
+      throw new AppError(httpStatus.FORBIDDEN, `Only admin can update ${f}`);
     }
   }
 
@@ -70,8 +68,86 @@ const updateUser = async (
     new: true,
     runValidators: true,
   });
+
+  // If user updated their photo and there was a previous photo, delete the old one from Cloudinary
+  if (payload.photo && isUserExist.photo) {
+    try {
+      await deleteImageFromCLoudinary(String(isUserExist.photo));
+    } catch (err) {
+      // Log and continue — do not stop the update if deletion fails
+      // eslint-disable-next-line no-console
+      console.warn(
+        "Failed to delete previous user photo from Cloudinary:",
+        err
+      );
+    }
+  }
+
   return newUpdatedUser;
 };
+const getMe = async (userId: string) => {
+  const user = await User.findById(userId).select("-password");
+  return {
+    data: user,
+  };
+};
+// const promoteUser = async (userId: string, decodedToken: JwtPayload) => {
+//   // only admin can promote
+//   if ((decodedToken as any).role !== Role.ADMIN) {
+//     throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
+//   }
+
+//   const user = await User.findById(userId);
+//   if (!user) {
+//     throw new AppError(httpStatus.NOT_FOUND, "User not found");
+//   }
+
+//   const updated = await User.findByIdAndUpdate(
+//     userId,
+//     { role: Role.ADMIN },
+//     { new: true, runValidators: true }
+//   );
+
+//   return updated;
+// };
+
+// const blockUser = async (userId: string, decodedToken: JwtPayload) => {
+//   if ((decodedToken as any).role !== Role.ADMIN) {
+//     throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
+//   }
+
+//   const user = await User.findById(userId);
+//   if (!user) {
+//     throw new AppError(httpStatus.NOT_FOUND, "User not found");
+//   }
+
+//   const updated = await User.findByIdAndUpdate(
+//     userId,
+//     { userStatus: ("BLOCKED" as unknown) as any },
+//     { new: true, runValidators: true }
+//   );
+
+//   return updated;
+// };
+
+// const unblockUser = async (userId: string, decodedToken: JwtPayload) => {
+//   if ((decodedToken as any).role !== Role.ADMIN) {
+//     throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
+//   }
+
+//   const user = await User.findById(userId);
+//   if (!user) {
+//     throw new AppError(httpStatus.NOT_FOUND, "User not found");
+//   }
+
+//   const updated = await User.findByIdAndUpdate(
+//     userId,
+//     { userStatus: ("ACTIVE" as unknown) as any },
+//     { new: true, runValidators: true }
+//   );
+
+//   return updated;
+// };
 
 const deleteUser = async (userId: string, decodedToken: JwtPayload) => {
   // Only admin can delete users
@@ -99,4 +175,8 @@ export const UserServices = {
   getAllUsers,
   updateUser,
   deleteUser,
+  getMe,
+  // promoteUser,
+  // blockUser,
+  // unblockUser,
 };

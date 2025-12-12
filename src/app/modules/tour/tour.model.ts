@@ -62,7 +62,7 @@ const tourSchema = new Schema<ITour>(
       required: [true, "Maximum group size is required"],
       min: [1, "Group size must be at least 1"],
     },
-    images: {
+    image: {
       type: String,
     },
 

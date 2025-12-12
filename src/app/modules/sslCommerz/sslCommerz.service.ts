@@ -13,9 +13,9 @@ const sslPaymentInit = async (payload: ISSLCommerz) => {
       total_amount: payload.amount,
       currency: "BDT",
       tran_id: payload.transactionId,
-      success_url: envVars.SSL.SSL_SUCCESS_BACKEND_URL,
-      fail_url: envVars.SSL.SSL_FAIL_BACKEND_URL,
-      cancel_url: envVars.SSL.SSL_CANCEL_BACKEND_URL,
+      success_url: `${envVars.SSL.SSL_SUCCESS_BACKEND_URL}?transactionId=${payload.transactionId}&amount=${payload.amount}&status=success`,
+      fail_url: `${envVars.SSL.SSL_FAIL_BACKEND_URL}?transactionId=${payload.transactionId}&amount=${payload.amount}&status=fail`,
+      cancel_url: `${envVars.SSL.SSL_CANCEL_BACKEND_URL}?transactionId=${payload.transactionId}&amount=${payload.amount}&status=cancel`,
       // // ipn_url: "http://localhost:3030/ipn",
       shipping_method: "N/A",
       product_name: "Tour",
@@ -40,15 +40,25 @@ const sslPaymentInit = async (payload: ISSLCommerz) => {
       ship_country: "N/A",
     };
 
-    const response = await axios({
-      method: "POST",
-      url: envVars.SSL.SSL_PAYMENT_API,
-      data: data,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+    // SSLCommerz expects form-urlencoded body
+    const params = new URLSearchParams();
+    Object.entries(data).forEach(([key, value]) => {
+      // Convert undefined/null to empty string to avoid sending 'undefined'
+      params.append(key, value == null ? "" : String(value));
     });
 
+    const response = await axios.post(
+      envVars.SSL.SSL_PAYMENT_API,
+      params.toString(),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        timeout: 10000,
+      }
+    );
+
+    // Return full response data and expose GatewayPageURL if present
     return response.data;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

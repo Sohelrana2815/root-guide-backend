@@ -1,3 +1,4 @@
+import { deleteImageFromCLoudinary } from "@/app/config/cloudinary.config";
 import { ITour } from "./tour.interface";
 import { Tour } from "./tour.model";
 import AppError from "@/app/errorHelpers/AppError";
@@ -56,6 +57,11 @@ const updateTour = async (
     new: true,
     runValidators: true,
   });
+
+  if (payload.image && tour.image) {
+    await deleteImageFromCLoudinary(tour.image);
+  }
+
   return updatedTour;
 };
 
