@@ -234,11 +234,8 @@ const updateBookingStatus = async (
   // Validate status transitions
   const validTransitions: Record<BookingStatus, BookingStatus[]> = {
     [BookingStatus.PENDING]: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
-    [BookingStatus.PAID]: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
-    [BookingStatus.CONFIRMED]: [
-      BookingStatus.COMPLETED,
-      BookingStatus.CANCELLED,
-    ],
+    [BookingStatus.CONFIRMED]: [BookingStatus.PAID, BookingStatus.CANCELLED],
+    [BookingStatus.PAID]: [BookingStatus.COMPLETED, BookingStatus.CANCELLED],
     [BookingStatus.COMPLETED]: [],
     [BookingStatus.CANCELLED]: [],
     [BookingStatus.FAILED]: [BookingStatus.PENDING],
@@ -343,6 +340,22 @@ const getAllBookings = async (filters?: {
   return bookings;
 };
 
+// ============================================
+// 8. CHECK IF BOOKING IS ELIGIBLE FOR REVIEW
+// ============================================
+const isBookingEligibleForReview = async (
+  bookingId: string, 
+  userId: Types.ObjectId
+): Promise<boolean> => {
+  const booking = await Booking.findOne({
+    _id: bookingId,
+    touristId: userId,
+    status: BookingStatus.COMPLETED
+  });
+
+  return !!booking;
+};
+
 export const BookingServices = {
   createBooking,
   getMyBookings,
@@ -351,4 +364,5 @@ export const BookingServices = {
   updateBookingStatus,
   cancelBooking,
   getAllBookings,
+  isBookingEligibleForReview,
 };

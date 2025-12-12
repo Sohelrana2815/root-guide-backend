@@ -8,6 +8,8 @@ import { ISSLCommerz } from "../sslCommerz/sslCommerz.interface";
 import { SSLService } from "../sslCommerz/sslCommerz.service";
 import { PAYMENT_STATUS } from "./payment.interface";
 import { BookingStatus } from "../bookings/booking.interface";
+
+
 const initPayment = async (bookingId: string) => {
   // Find payment by bookingId
   const payment = await Payment.findOne({ bookingId });
