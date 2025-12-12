@@ -1,4 +1,4 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, models } from "mongoose";
 import { IPayment, PAYMENT_STATUS } from "./payment.interface";
 
 const paymentSchema = new Schema<IPayment>(
@@ -39,4 +39,4 @@ const paymentSchema = new Schema<IPayment>(
   }
 );
 
-export const Payment = model<IPayment>("Payment", paymentSchema);
+export const Payment = models.Payment || model<IPayment>("Payment", paymentSchema);

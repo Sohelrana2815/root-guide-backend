@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, models } from "mongoose";
 import { ITour } from "./tour.interface";
 
 const tourSchema = new Schema<ITour>(
@@ -95,4 +95,4 @@ tourSchema.index({ guideId: 1 }); // For Guide's dashboard list
 tourSchema.index({ city: 1, category: 1 }); // For filtering results
 tourSchema.index({ title: "text", description: "text" }); // For full-text search
 
-export const Tour = model<ITour>("Tour", tourSchema);
+export const Tour = models.Tour || model<ITour>("Tour", tourSchema);

@@ -1,4 +1,4 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, models } from "mongoose";
 import { BookingStatus, IBooking } from "./booking.interface";
 
 const bookingSchema = new Schema<IBooking>(
@@ -61,4 +61,4 @@ bookingSchema.index({ guideId: 1 });
 // 3. Tour Page: "Show bookings for this specific tour"
 bookingSchema.index({ tourId: 1 });
 
-export const Booking = model<IBooking>("Booking", bookingSchema);
+export const Booking = models.Booking || model<IBooking>("Booking", bookingSchema);
