@@ -71,6 +71,10 @@ const tourSchema = new Schema<ITour>(
       type: Boolean,
       default: true,
     },
+    isDelete: {
+      type: Boolean,
+      default: false,
+    },
     averageRating: {
       type: Number,
       default: 0,

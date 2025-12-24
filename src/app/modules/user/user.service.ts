@@ -10,8 +10,10 @@ import bcryptjs from "bcryptjs";
 
 const getAllUsers = async () => {
   const users = await User.find({});
+  const total = await User.countDocuments();
   return {
     data: users,
+    meta: total,
   };
 };
 const updateUser = async (

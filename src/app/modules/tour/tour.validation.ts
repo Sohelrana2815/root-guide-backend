@@ -48,6 +48,7 @@ export const createTourZodSchema = z.object({
   // guideId: z.string().optional(),
 
   isActive: z.boolean().optional().default(true),
+  isDeleted: z.boolean().optional().default(false),
 });
 
 export const updateTourZodSchema = createTourZodSchema.partial();

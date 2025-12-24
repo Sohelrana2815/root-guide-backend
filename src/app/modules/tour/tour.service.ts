@@ -5,6 +5,14 @@ import AppError from "@/app/errorHelpers/AppError";
 import httpStatus from "http-status";
 import { Types } from "mongoose";
 
+interface TourListQuery {
+  searchTerm?: string;
+  category?: string;
+  city?: string;
+  page?: string | number;
+  limit?: string | number;
+}
+
 const createTour = async (payload: ITour) => {
   // Validate that guideId is provided
   if (!payload.guideId) {
@@ -16,14 +24,91 @@ const createTour = async (payload: ITour) => {
   return tour;
 };
 
-const getAllTours = async () => {
-  const tours = await Tour.find();
-  return tours;
+const getTours = async () => {
+  const tours = await Tour.find({});
+  const total = await Tour.countDocuments();
+  return {
+    data: tours,
+    meta: {
+      total,
+    },
+  };
 };
 
-const getMyTours = async (guideId: Types.ObjectId) => {
-  const tours = await Tour.find({ guideId });
-  return tours;
+const notDeletedFilter: Record<string, unknown> = {
+  $or: [{ isDelete: false }, { isDelete: { $exists: false } }],
+};
+
+const buildTourListFilters = (
+  query: TourListQuery,
+  baseFilter: Record<string, unknown>
+) => {
+  const searchTerm =
+    typeof query.searchTerm === "string" ? query.searchTerm.trim() : undefined;
+  const category =
+    typeof query.category === "string" ? query.category : undefined;
+  const city = typeof query.city === "string" ? query.city : undefined;
+
+  const andConditions: Record<string, unknown>[] = [baseFilter];
+
+  if (category) {
+    andConditions.push({ category });
+  }
+
+  if (city) {
+    andConditions.push({ city });
+  }
+
+  if (searchTerm) {
+    const regex = { $regex: searchTerm, $options: "i" };
+    andConditions.push({
+      $or: [{ title: regex }, { itinerary: regex }, { city: regex }],
+    });
+  }
+
+  return andConditions.length > 1 ? { $and: andConditions } : baseFilter;
+};
+
+const parsePagination = (query: TourListQuery) => {
+  const pageRaw =
+    typeof query.page === "string" ? Number(query.page) : query.page;
+  const limitRaw =
+    typeof query.limit === "string" ? Number(query.limit) : query.limit;
+
+  const page = typeof pageRaw === "number" && pageRaw > 0 ? pageRaw : 1;
+  const limit = typeof limitRaw === "number" && limitRaw > 0 ? limitRaw : 10;
+  const skip = (page - 1) * limit;
+  return { page, limit, skip };
+};
+
+const getAllTours = async (query: TourListQuery = {}) => {
+  const { page, limit, skip } = parsePagination(query);
+  const filter = buildTourListFilters(query, notDeletedFilter);
+
+  const tours = await Tour.find(filter)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Tour.countDocuments(filter);
+
+  return { data: tours, meta: { total, page, limit } };
+};
+
+const getMyTours = async (
+  guideId: Types.ObjectId,
+  query: TourListQuery = {}
+) => {
+  const { page, limit, skip } = parsePagination(query);
+  const filter = buildTourListFilters(query, { guideId, ...notDeletedFilter });
+
+  const tours = await Tour.find(filter)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Tour.countDocuments(filter);
+  return { data: tours, meta: { total, page, limit } };
 };
 
 const getSingleTour = async (tourId: string) => {
@@ -115,6 +200,25 @@ const reactivateTour = async (tourId: string, guideId: Types.ObjectId) => {
   return updatedTour;
 };
 
+const softDeleteTour = async (tourId: string, guideId: Types.ObjectId) => {
+  const tour = await Tour.findById(tourId);
+
+  if (!tour) {
+    throw new AppError(httpStatus.NOT_FOUND, "Tour not found");
+  }
+
+  if (tour.guideId.toString() !== guideId.toString()) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You can only soft delete your own tours"
+    );
+  }
+
+  tour.isDelete = true;
+  await tour.save();
+  return null;
+};
+
 const deleteTour = async (tourId: string, guideId: Types.ObjectId) => {
   const tour = await Tour.findById(tourId);
 
@@ -135,11 +239,13 @@ const deleteTour = async (tourId: string, guideId: Types.ObjectId) => {
 
 export const TourServices = {
   createTour,
+  getTours,
   getAllTours,
   getMyTours,
+  getSingleTour,
   updateTour,
   deActivateTour,
   reactivateTour,
+  softDeleteTour,
   deleteTour,
-  getSingleTour,
 };

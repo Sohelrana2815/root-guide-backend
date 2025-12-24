@@ -18,7 +18,7 @@ router.post(
 
 // see all tours admin only
 router.get("/all-tours", checkAuth(Role.ADMIN), TourControllers.getAllTours);
-
+router.get("/", TourControllers.getTours);
 // see my tours guide only
 router.get("/my-tours", checkAuth(Role.GUIDE), TourControllers.getMyTours);
 
@@ -51,6 +51,12 @@ router.patch(
   "/:id/reactivate",
   checkAuth(Role.GUIDE || Role.ADMIN),
   TourControllers.reactivateTour
+);
+
+router.patch(
+  "/softDelete/:id",
+  checkAuth(Role.GUIDE || Role.ADMIN),
+  TourControllers.softDeleteTour
 );
 
 router.delete(

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { catchAsync } from "@/app/utils/catchAsync";
 import { sendResponse } from "@/app/utils/sendResponse";
 import { TourServices } from "./tour.service";
@@ -28,14 +29,25 @@ const createTour = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
-
-const getAllTours = catchAsync(async (req: Request, res: Response) => {
-  const result = await TourServices.getAllTours();
+const getTours = catchAsync(async (req: Request, res: Response) => {
+  const result = await TourServices.getTours();
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Tours retrieved successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
+const getAllTours = catchAsync(async (req: Request, res: Response) => {
+  const result = await TourServices.getAllTours(req.query as any);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Tours retrieved successfully",
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -46,12 +58,16 @@ const getMyTours = catchAsync(async (req: Request, res: Response) => {
     throw new AppError(httpStatus.UNAUTHORIZED, "User ID not found in request");
   }
 
-  const result = await TourServices.getMyTours(authUser.userId);
+  const result = await TourServices.getMyTours(
+    authUser.userId,
+    req.query as any
+  );
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Your tours retrieved successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -85,7 +101,11 @@ const updateTour = catchAsync(async (req: Request, res: Response) => {
     image: req.file?.path,
   };
 
-  const result = await TourServices.updateTour(id, authUser.userId, updatePayload);
+  const result = await TourServices.updateTour(
+    id,
+    authUser.userId,
+    updatePayload
+  );
 
   sendResponse(res, {
     statusCode: 200,
@@ -131,6 +151,24 @@ const reactivateTour = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const softDeleteTour = catchAsync(async (req: Request, res: Response) => {
+  const authUser = req.user as AuthPayload;
+
+  if (!authUser?.userId) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "User ID not found in request");
+  }
+
+  const { id } = req.params;
+  const result = await TourServices.softDeleteTour(id, authUser.userId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Tour deleted successfully",
+    data: result,
+  });
+});
+
 const deleteTour = catchAsync(async (req: Request, res: Response) => {
   const authUser = req.user as AuthPayload;
 
@@ -151,11 +189,13 @@ const deleteTour = catchAsync(async (req: Request, res: Response) => {
 
 export const TourControllers = {
   createTour,
+  getTours,
   getAllTours,
+  getSingleTour,
   getMyTours,
   updateTour,
   deActivateTour,
   reactivateTour,
+  softDeleteTour,
   deleteTour,
-  getSingleTour,
 };
