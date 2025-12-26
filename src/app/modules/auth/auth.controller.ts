@@ -13,7 +13,7 @@ import { envVars } from "@/app/config/env";
 
 const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    // console.log("from controller", req.body);
+    console.log("from controller", req.body);
     const user = await AuthServices.createUser(req.body);
 
     sendResponse(res, {

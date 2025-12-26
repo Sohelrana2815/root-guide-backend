@@ -4,6 +4,15 @@ import { Tour } from "./tour.model";
 import AppError from "@/app/errorHelpers/AppError";
 import httpStatus from "http-status";
 import { Types } from "mongoose";
+// --- put near top with other imports ---
+const ALLOWED_SORT_FIELDS = new Set([
+  "title",
+  "price",
+  "duration",
+  "maxGroupSize",
+  "averageRating",
+  "createdAt",
+]);
 
 interface TourListQuery {
   searchTerm?: string;
@@ -11,6 +20,8 @@ interface TourListQuery {
   city?: string;
   page?: string | number;
   limit?: string | number;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 const createTour = async (payload: ITour) => {
@@ -85,12 +96,34 @@ const getAllTours = async (query: TourListQuery = {}) => {
   const { page, limit, skip } = parsePagination(query);
   const filter = buildTourListFilters(query, notDeletedFilter);
 
-  const tours = await Tour.find(filter)
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  // parse sort params
+  const rawSortBy =
+    typeof query?.sortBy === "string" ? query.sortBy.trim() : "";
+  const rawSortOrder =
+    typeof query?.sortOrder === "string"
+      ? query.sortOrder.trim().toLowerCase()
+      : "desc";
 
-  const total = await Tour.countDocuments(filter);
+  // default values
+  let sortBy = "createdAt";
+  const sortOrder: 1 | -1 = rawSortOrder === "asc" ? 1 : -1;
+
+  if (rawSortBy && ALLOWED_SORT_FIELDS.has(rawSortBy)) {
+    sortBy = rawSortBy;
+  }
+
+  const sortObj: Record<string, 1 | -1> = { [sortBy]: sortOrder };
+
+  const useCollation = sortBy === "title"; // use collation for case-insensitive sort on text fields
+
+  let queryBuilder = Tour.find(filter).sort(sortObj).skip(skip).limit(limit);
+  if (useCollation) {
+    queryBuilder = queryBuilder.collation({ locale: "en", strength: 2 });
+  }
+  const [tours, total] = await Promise.all([
+    queryBuilder.exec(),
+    Tour.countDocuments(filter),
+  ]);
 
   return { data: tours, meta: { total, page, limit } };
 };
@@ -102,12 +135,34 @@ const getMyTours = async (
   const { page, limit, skip } = parsePagination(query);
   const filter = buildTourListFilters(query, { guideId, ...notDeletedFilter });
 
-  const tours = await Tour.find(filter)
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  // parse sort params
+  const rawSortBy =
+    typeof query?.sortBy === "string" ? query.sortBy.trim() : "";
+  const rawSortOrder =
+    typeof query?.sortOrder === "string"
+      ? query.sortOrder.trim().toLowerCase()
+      : "desc";
 
-  const total = await Tour.countDocuments(filter);
+  let sortBy = "createdAt";
+  const sortOrder: 1 | -1 = rawSortOrder === "asc" ? 1 : -1;
+
+  if (rawSortBy && ALLOWED_SORT_FIELDS.has(rawSortBy)) {
+    sortBy = rawSortBy;
+  }
+
+  const sortObj: Record<string, 1 | -1> = { [sortBy]: sortOrder };
+
+  const useCollation = sortBy === "title";
+
+  let queryBuilder = Tour.find(filter).sort(sortObj).skip(skip).limit(limit);
+  if (useCollation) {
+    queryBuilder = queryBuilder.collation({ locale: "en", strength: 2 });
+  }
+
+  const [tours, total] = await Promise.all([
+    queryBuilder.exec(),
+    Tour.countDocuments(filter),
+  ]);
   return { data: tours, meta: { total, page, limit } };
 };
 

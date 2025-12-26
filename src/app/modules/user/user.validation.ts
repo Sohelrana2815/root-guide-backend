@@ -1,38 +1,55 @@
 import { z } from "zod";
 import { Role, UserStatus } from "./user.interface";
 
-export const createUserZodSchema = z.object({
-  name: z
-    .string({
-      error: "Name is required",
-    })
-    .trim()
-    .min(3, "Name must be at least 3 characters long")
-    .max(50, "Name must be at most 50 characters long"),
+export const createUserZodSchema = z
+  .object({
+    name: z
+      .string({
+        error: "Name is required",
+      })
+      .trim()
+      .min(3, "Name must be at least 3 characters long")
+      .max(50, "Name must be at most 50 characters long"),
 
-  email: z.email({ error: "Email is required" }),
+    email: z.email({ error: "Email is required" }),
 
-  // Role (Mandatory for creation)
-  role: z.enum(Role, {
-    error: "Role (GUIDE, or TOURIST) is required",
-  }),
-
-  password: z
-    .string()
-    .min(6, { error: "Password must be at least 6 characters" })
-    // Must have at least 1 uppercase letter
-    .regex(/^(?=.*[A-Z]).+$/, {
-      error: "Password must contain at least 1 uppercase letter",
-    })
-    // Must have at least 1 digit
-    .regex(/^(?=.*\d).+$/, {
-      error: "Password must contain at least one digit",
-    })
-    // Must have at least 1 special character (!@#$%^&*)
-    .regex(/^(?=.*[!@#$%^&*]).+$/, {
-      error: "Password must contain at least one special character (!@#$%^&*)",
+    // Role (Mandatory for creation)
+    role: z.enum(Role, {
+      error: "Role (GUIDE, or TOURIST) is required",
     }),
-});
+
+    password: z
+      .string()
+      .min(6, { error: "Password must be at least 6 characters" })
+      // Must have at least 1 uppercase letter
+      .regex(/^(?=.*[A-Z]).+$/, {
+        error: "Password must contain at least 1 uppercase letter",
+      })
+      // Must have at least 1 digit
+      .regex(/^(?=.*\d).+$/, {
+        error: "Password must contain at least one digit",
+      })
+      // Must have at least 1 special character (!@#$%^&*)
+      .regex(/^(?=.*[!@#$%^&*]).+$/, {
+        error:
+          "Password must contain at least one special character (!@#$%^&*)",
+      }),
+    languages: z
+      .array(z.string({ error: "Languages must be array of strings" }))
+      .min(1, { error: "Languages must be at least 1 item long" }),
+    expertise: z
+      .array(z.string({ error: "Expertise must be array of strings" }))
+      .optional(),
+  })
+  .refine(
+    (data) =>
+      data.role !== "GUIDE" ||
+      (Array.isArray(data.expertise) && data.expertise.length > 0),
+    {
+      message: "At least one expertise is required for guides.",
+      path: ["expertise"],
+    }
+  );
 
 export const updateUserZodSchema = z.object({
   name: z
@@ -98,7 +115,8 @@ export const updateUserZodSchema = z.object({
     .min(7, { error: "Phone number must be at least 7 characters long" })
     .max(20, { error: "Phone number cannot exceed 20 characters" })
     .regex(/^\+?[0-9\s-]{7,20}$/, {
-      message: "Phone number must contain only digits, spaces, hyphens and an optional leading +",
+      message:
+        "Phone number must contain only digits, spaces, hyphens and an optional leading +",
     })
     .optional(),
 });
