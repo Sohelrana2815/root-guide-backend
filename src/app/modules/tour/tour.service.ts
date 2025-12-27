@@ -22,6 +22,7 @@ interface TourListQuery {
   limit?: string | number;
   sortBy?: string;
   sortOrder?: string;
+  language?: string | string[];
 }
 
 const createTour = async (payload: ITour) => {
@@ -60,6 +61,9 @@ const buildTourListFilters = (
     typeof query.category === "string" ? query.category : undefined;
   const city = typeof query.city === "string" ? query.city : undefined;
 
+  // 1. Get the language from query
+  const language = query.language;
+
   const andConditions: Record<string, unknown>[] = [baseFilter];
 
   if (category) {
@@ -68,6 +72,14 @@ const buildTourListFilters = (
 
   if (city) {
     andConditions.push({ city });
+  }
+
+  // 2. language filter logic
+  if (language) {
+    const languagesArray = Array.isArray(language) ? language : [language];
+    andConditions.push({
+      languages: { $in: languagesArray },
+    });
   }
 
   if (searchTerm) {

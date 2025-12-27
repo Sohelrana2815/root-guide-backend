@@ -22,6 +22,10 @@ export const createTourZodSchema = z.object({
   category: z.string({ error: "Category is required" }).trim(),
 
   city: z.string({ error: "City is required" }).trim(),
+  languages: z
+    .array(z.string({ error: "Languages must be array of strings" }))
+    .min(1, { error: "Give at least 1  language" }),
+  expertise: z.array(z.string({ error: "Expertise must be array of strings" })),
 
   // 3. Logistics & Pricing
   price: z

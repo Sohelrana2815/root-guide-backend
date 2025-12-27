@@ -40,7 +40,8 @@ const tourSchema = new Schema<ITour>(
       required: [true, "City/Location is required"],
       trim: true,
     },
-
+    languages: [{ type: String, required: true }],
+    expertise: [{ type: String, required: true }],
     // 4. Logistics & Pricing
     price: {
       type: Number,

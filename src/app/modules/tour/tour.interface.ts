@@ -14,7 +14,8 @@ export interface ITour {
   // 3. Search & Categorization
   category: string; // CRITICAL for Filter (e.g., "History", "Food", "Adventure")
   city: string; // CRITICAL for Search (e.g., "Paris", "New Orleans"). Renamed 'location' to 'city' for clarity based on interface.
-
+  languages: string[];
+  expertise: string[];
   // 4. Logistics & Pricing
   price: number;
   duration: number; // In hours (e.g., 4.5)
