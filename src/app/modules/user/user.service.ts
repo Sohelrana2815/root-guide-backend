@@ -93,25 +93,42 @@ const getMe = async (userId: string) => {
     data: user,
   };
 };
-// const promoteUser = async (userId: string, decodedToken: JwtPayload) => {
-//   // only admin can promote
-//   if ((decodedToken as any).role !== Role.ADMIN) {
-//     throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
-//   }
 
-//   const user = await User.findById(userId);
-//   if (!user) {
-//     throw new AppError(httpStatus.NOT_FOUND, "User not found");
-//   }
+export const updateUserRole = async (
+  userId: string,
+  targetRole: Role | string,
+  decodedToken: JwtPayload
+) => {
+  // only admin can change role
 
-//   const updated = await User.findByIdAndUpdate(
-//     userId,
-//     { role: Role.ADMIN },
-//     { new: true, runValidators: true }
-//   );
-
-//   return updated;
-// };
+  if ((decodedToken as any).role !== Role.ADMIN) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to perform this action"
+    );
+  }
+  const normalizedRole = String(targetRole).toUpperCase();
+  if (!Object.values(Role).includes(normalizedRole as Role)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Invalid role. Allowed roles: ${Object.values(Role).join(", ")}`
+    );
+  }
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+  // If already the same role, return the user unchanged
+  if (user.role === (normalizedRole as Role)) {
+    return user;
+  }
+  const updated = await User.findByIdAndUpdate(
+    userId,
+    { role: normalizedRole as Role },
+    { new: true, runValidators: true }
+  );
+  return updated;
+};
 
 // const blockUser = async (userId: string, decodedToken: JwtPayload) => {
 //   if ((decodedToken as any).role !== Role.ADMIN) {
@@ -178,7 +195,7 @@ export const UserServices = {
   updateUser,
   deleteUser,
   getMe,
-  // promoteUser,
+  updateUserRole,
   // blockUser,
   // unblockUser,
 };

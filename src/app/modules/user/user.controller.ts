@@ -6,6 +6,8 @@ import { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status";
 import { UserServices } from "./user.service";
 import { JwtPayload } from "jsonwebtoken";
+import AppError from "@/app/errorHelpers/AppError";
+import { Role } from "./user.interface";
 
 const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -45,7 +47,6 @@ const getMe = catchAsync(
     const decodedToken = req.user as JwtPayload;
     const result = await UserServices.getMe(decodedToken.userId);
 
-   
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.CREATED,
@@ -55,20 +56,51 @@ const getMe = catchAsync(
   }
 );
 
-// const promoteUser = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     const userId = req.params.id;
-//     const verifiedToken = req.user as JwtPayload;
-//     const result = await UserServices.promoteUser(userId, verifiedToken);
+export const updateUserRole = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.id;
+    const bodyRole = req.body?.role as string | undefined;
 
-//     sendResponse(res, {
-//       success: true,
-//       statusCode: httpStatus.OK,
-//       message: "User promoted to admin successfully",
-//       data: result,
-//     });
-//   }
-// );
+    if (!bodyRole) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "role is required in request body"
+      );
+    }
+
+    // sanitized upper-case
+    const desiredRole = bodyRole.toUpperCase();
+
+    // (Optional) provide clearer error before calling service
+    if (!Object.values(Role).includes(desiredRole as Role)) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Invalid role. Allowed roles: ${Object.values(Role).join(", ")}`
+      );
+    }
+
+    const verifiedToken = req.user as JwtPayload;
+    if (!verifiedToken) {
+      throw new AppError(
+        httpStatus.UNAUTHORIZED,
+        "Missing authentication token"
+      );
+    }
+
+    const result = await UserServices.updateUserRole(
+      userId,
+      desiredRole as Role,
+      verifiedToken
+    );
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: `User role updated to ${desiredRole} successfully`,
+      data: result,
+    });
+  }
+);
 
 // const blockUser = catchAsync(
 //   async (req: Request, res: Response, next: NextFunction) => {
@@ -120,7 +152,7 @@ export const UserControllers = {
   updateUser,
   deleteUser,
   getMe,
-  // promoteUser,
+  updateUserRole,
   // blockUser,
   // unblockUser,
 };
