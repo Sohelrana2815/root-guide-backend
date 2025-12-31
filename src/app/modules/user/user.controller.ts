@@ -9,29 +9,33 @@ import { JwtPayload } from "jsonwebtoken";
 import AppError from "@/app/errorHelpers/AppError";
 import { Role } from "./user.interface";
 
-const getAllUsers = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const result = await UserServices.getAllUsers();
+const getAllUsers = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserServices.getAllUsers(req.query);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Users retrieved successfully",
+    meta: result.meta, // Essential for frontend pagination
+    data: result.data,
+  });
+});
 
-    sendResponse(res, {
-      success: true,
-      statusCode: httpStatus.CREATED,
-      message: "All Users Retrieved Successfully",
-      data: result.data,
-      meta: { total: result.meta },
-    });
-  }
-);
-const updateUser = catchAsync(
+const updateMyProfile = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    // console.log(req.body, "From controller");
     const userId = req.params.id;
     const verifiedToken = req.user as JwtPayload;
+    const bodyData = req.body.data ? JSON.parse(req.body.data) : {};
     const payload = {
       ...req.body,
       photo: (req as any).file?.path,
     };
 
-    const user = await UserServices.updateUser(userId, payload, verifiedToken);
+    const user = await UserServices.updateMyProfile(
+      userId,
+      payload,
+      verifiedToken
+    );
 
     sendResponse(res, {
       success: true,
@@ -102,36 +106,31 @@ export const updateUserRole = catchAsync(
   }
 );
 
-// const blockUser = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     const userId = req.params.id;
-//     const verifiedToken = req.user as JwtPayload;
-//     const result = await UserServices.blockUser(userId, verifiedToken);
+const blockUser = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.params.id;
+  const verifiedToken = req.user as JwtPayload;
+  const result = await UserServices.blockUser(userId, verifiedToken);
 
-//     sendResponse(res, {
-//       success: true,
-//       statusCode: httpStatus.OK,
-//       message: "User blocked successfully",
-//       data: result,
-//     });
-//   }
-// );
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "User blocked successfully",
+    data: result,
+  });
+});
 
-// const unblockUser = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     const userId = req.params.id;
-//     const verifiedToken = req.user as JwtPayload;
-//     const result = await UserServices.unblockUser(userId, verifiedToken);
+const unblockUser = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.params.id;
+  const verifiedToken = req.user as JwtPayload;
+  const result = await UserServices.unblockUser(userId, verifiedToken);
 
-//     sendResponse(res, {
-//       success: true,
-//       statusCode: httpStatus.OK,
-//       message: "User unblocked successfully",
-//       data: result,
-//     });
-//   }
-// );
-
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "User unblocked successfully",
+    data: result,
+  });
+});
 const deleteUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.params.id;
@@ -149,10 +148,10 @@ const deleteUser = catchAsync(
 
 export const UserControllers = {
   getAllUsers,
-  updateUser,
+  updateMyProfile,
   deleteUser,
   getMe,
   updateUserRole,
-  // blockUser,
-  // unblockUser,
+  blockUser,
+  unblockUser,
 };

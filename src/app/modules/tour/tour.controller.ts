@@ -6,6 +6,7 @@ import { Request, Response } from "express";
 import AppError from "@/app/errorHelpers/AppError";
 import httpStatus from "http-status";
 import { AuthPayload } from "@/app/auth/interface";
+import { Role } from "../user/user.interface";
 
 const createTour = catchAsync(async (req: Request, res: Response) => {
   const authUser = req.user as AuthPayload;
@@ -157,9 +158,14 @@ const softDeleteTour = catchAsync(async (req: Request, res: Response) => {
   if (!authUser?.userId) {
     throw new AppError(httpStatus.UNAUTHORIZED, "User ID not found in request");
   }
+  const isAdmin = authUser.role === Role.ADMIN;
 
   const { id } = req.params;
-  const result = await TourServices.softDeleteTour(id, authUser.userId);
+  const result = await TourServices.softDeleteTour(
+    id,
+    authUser.userId,
+    isAdmin
+  );
 
   sendResponse(res, {
     statusCode: 200,
@@ -175,9 +181,9 @@ const deleteTour = catchAsync(async (req: Request, res: Response) => {
   if (!authUser?.userId) {
     throw new AppError(httpStatus.UNAUTHORIZED, "User ID not found in request");
   }
-
+  const isAdmin = authUser.role === Role.ADMIN;
   const { id } = req.params;
-  await TourServices.deleteTour(id, authUser.userId);
+  await TourServices.deleteTour(id, authUser.userId, isAdmin);
 
   sendResponse(res, {
     statusCode: 200,

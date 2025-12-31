@@ -20,7 +20,11 @@ router.post(
 router.get("/all-tours", checkAuth(Role.ADMIN), TourControllers.getAllTours);
 router.get("/", TourControllers.getTours);
 // see my tours guide only
-router.get("/my-tours", checkAuth(Role.GUIDE), TourControllers.getMyTours);
+router.get(
+  "/my-tours",
+  checkAuth(Role.GUIDE || Role.ADMIN),
+  TourControllers.getMyTours
+);
 
 // update tour guide only
 router.patch(
@@ -55,7 +59,7 @@ router.patch(
 
 router.patch(
   "/softDelete/:id",
-  checkAuth(Role.GUIDE || Role.ADMIN),
+  checkAuth(Role.GUIDE, Role.ADMIN),
   TourControllers.softDeleteTour
 );
 

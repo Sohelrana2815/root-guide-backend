@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { JwtPayload } from "jsonwebtoken";
-import { IUser, Role } from "./user.interface";
+import { IUser, Role, UserStatus } from "./user.interface";
 import { User } from "./user.model";
 import AppError from "@/app/errorHelpers/AppError";
 import httpStatus from "http-status";
@@ -8,15 +8,58 @@ import { deleteImageFromCLoudinary } from "@/app/config/cloudinary.config";
 import { envVars } from "@/app/config/env";
 import bcryptjs from "bcryptjs";
 
-const getAllUsers = async () => {
-  const users = await User.find({});
-  const total = await User.countDocuments();
+interface UserListQuery {
+  searchTerm?: string;
+  role?: string;
+  userStatus?: string;
+  email?: string;
+  page?: string | number;
+  limit?: string | number;
+  sortBy?: string;
+  sortOrder?: string;
+}
+const buildUserFilters = (query: UserListQuery) => {
+  const { searchTerm, role, userStatus, email } = query;
+  const andConditions: Record<string, unknown>[] = [
+    { isDeleted: { $ne: true } },
+  ];
+
+  if (searchTerm) {
+    andConditions.push({ name: { $regex: searchTerm, $options: "i" } });
+  }
+
+  if (role) andConditions.push({ role });
+  if (userStatus) andConditions.push({ userStatus });
+  if (email) andConditions.push({ email });
+
+  return andConditions.length > 0 ? { $and: andConditions } : {};
+};
+
+const getAllUsers = async (query: UserListQuery = {}) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const filter = buildUserFilters(query);
+
+  const sortBy = (query.sortBy as string) || "createdAt";
+  const sortOrder = query.sortOrder === "asc" ? 1 : -1;
+
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .sort({ [sortBy]: sortOrder as 1 | -1 })
+      .skip(skip)
+      .limit(limit),
+    User.countDocuments(filter),
+  ]);
+
   return {
     data: users,
-    meta: total,
+    meta: { total, page, limit },
   };
 };
-const updateUser = async (
+
+const updateMyProfile = async (
   userId: string,
   payload: Partial<IUser>,
   decodedToken: JwtPayload
@@ -130,43 +173,35 @@ export const updateUserRole = async (
   return updated;
 };
 
-// const blockUser = async (userId: string, decodedToken: JwtPayload) => {
-//   if ((decodedToken as any).role !== Role.ADMIN) {
-//     throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
-//   }
+const blockUser = async (userId: string, decodedToken: JwtPayload) => {
+  if (decodedToken.role !== Role.ADMIN) {
+    throw new AppError(httpStatus.FORBIDDEN, "Only admins can block users");
+  }
 
-//   const user = await User.findById(userId);
-//   if (!user) {
-//     throw new AppError(httpStatus.NOT_FOUND, "User not found");
-//   }
+  const user = await User.findById(userId);
+  if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
 
-//   const updated = await User.findByIdAndUpdate(
-//     userId,
-//     { userStatus: ("BLOCKED" as unknown) as any },
-//     { new: true, runValidators: true }
-//   );
+  return await User.findByIdAndUpdate(
+    userId,
+    { userStatus: UserStatus.BLOCKED },
+    { new: true, runValidators: true }
+  );
+};
 
-//   return updated;
-// };
+const unblockUser = async (userId: string, decodedToken: JwtPayload) => {
+  if (decodedToken.role !== Role.ADMIN) {
+    throw new AppError(httpStatus.FORBIDDEN, "Only admins can unblock users");
+  }
 
-// const unblockUser = async (userId: string, decodedToken: JwtPayload) => {
-//   if ((decodedToken as any).role !== Role.ADMIN) {
-//     throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
-//   }
+  const user = await User.findById(userId);
+  if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
 
-//   const user = await User.findById(userId);
-//   if (!user) {
-//     throw new AppError(httpStatus.NOT_FOUND, "User not found");
-//   }
-
-//   const updated = await User.findByIdAndUpdate(
-//     userId,
-//     { userStatus: ("ACTIVE" as unknown) as any },
-//     { new: true, runValidators: true }
-//   );
-
-//   return updated;
-// };
+  return await User.findByIdAndUpdate(
+    userId,
+    { userStatus: UserStatus.ACTIVE },
+    { new: true, runValidators: true }
+  );
+};
 
 const deleteUser = async (userId: string, decodedToken: JwtPayload) => {
   // Only admin can delete users
@@ -192,10 +227,10 @@ const deleteUser = async (userId: string, decodedToken: JwtPayload) => {
 
 export const UserServices = {
   getAllUsers,
-  updateUser,
+  updateMyProfile,
   deleteUser,
   getMe,
   updateUserRole,
-  // blockUser,
-  // unblockUser,
+  blockUser,
+  unblockUser,
 };

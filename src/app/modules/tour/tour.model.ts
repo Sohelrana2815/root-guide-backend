@@ -72,7 +72,7 @@ const tourSchema = new Schema<ITour>(
       type: Boolean,
       default: true,
     },
-    isDelete: {
+    isDeleted: {
       type: Boolean,
       default: false,
     },

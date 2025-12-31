@@ -23,7 +23,7 @@ router.patch(
   checkAuth(...Object.values(Role)),
   multerUpload.single("file"),
   validateRequest(updateUserZodSchema),
-  UserControllers.updateUser
+  UserControllers.updateMyProfile
 );
 
 // soft delte user
@@ -34,8 +34,13 @@ router.patch(
   checkAuth(Role.ADMIN),
   UserControllers.updateUserRole
 );
-// router.patch('/:id/block', checkAuth(Role.ADMIN), UserControllers.blockUser);
-// router.patch('/:id/unblock', checkAuth(Role.ADMIN), UserControllers.unblockUser);
+router.patch("/:id/block", checkAuth(Role.ADMIN), UserControllers.blockUser);
+
+router.patch(
+  "/:id/unblock",
+  checkAuth(Role.ADMIN),
+  UserControllers.unblockUser
+);
 
 // soft delte user
 router.delete("/:id", checkAuth(Role.ADMIN), UserControllers.deleteUser);

@@ -25,7 +25,7 @@ export interface ITour {
 
   // 5. Status & Statistics (Stored fields, not virtuals)
   isActive: boolean; // Default: true. Allows guide to "turn off" the listing.
-  isDelete: boolean;
+  isDeleted: boolean;
   averageRating: number; // Stored for display performance (0.0 to 5.0)
   reviewCount: number; // Stored for display performance
 

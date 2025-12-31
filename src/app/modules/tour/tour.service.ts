@@ -48,7 +48,7 @@ const getTours = async () => {
 };
 
 const notDeletedFilter: Record<string, unknown> = {
-  $or: [{ isDelete: false }, { isDelete: { $exists: false } }],
+  $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
 };
 
 const buildTourListFilters = (
@@ -267,33 +267,43 @@ const reactivateTour = async (tourId: string, guideId: Types.ObjectId) => {
   return updatedTour;
 };
 
-const softDeleteTour = async (tourId: string, guideId: Types.ObjectId) => {
+const softDeleteTour = async (
+  tourId: string,
+  guideId: Types.ObjectId,
+  isAdmin = false
+) => {
   const tour = await Tour.findById(tourId);
 
   if (!tour) {
     throw new AppError(httpStatus.NOT_FOUND, "Tour not found");
   }
 
-  if (tour.guideId.toString() !== guideId.toString()) {
+  // If user is not admin, enforce ownership
+  if (!isAdmin && tour.guideId.toString() !== guideId.toString()) {
     throw new AppError(
       httpStatus.FORBIDDEN,
       "You can only soft delete your own tours"
     );
   }
 
-  tour.isDelete = true;
+  tour.isDeleted = true;
   await tour.save();
   return null;
 };
 
-const deleteTour = async (tourId: string, guideId: Types.ObjectId) => {
+const deleteTour = async (
+  tourId: string,
+  guideId: Types.ObjectId,
+  isAdmin = false
+) => {
   const tour = await Tour.findById(tourId);
 
   if (!tour) {
     throw new AppError(httpStatus.NOT_FOUND, "Tour not found");
   }
 
-  if (tour.guideId.toString() !== guideId.toString()) {
+  // If user is not admin, enforce ownership
+  if (!isAdmin && tour.guideId.toString() !== guideId.toString()) {
     throw new AppError(
       httpStatus.FORBIDDEN,
       "You can only delete your own tours"
