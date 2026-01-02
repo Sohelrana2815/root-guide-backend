@@ -19,6 +19,7 @@ router.post(
 // see all tours admin only
 router.get("/all-tours", checkAuth(Role.ADMIN), TourControllers.getAllTours);
 router.get("/", TourControllers.getTours);
+
 // see my tours guide only
 router.get(
   "/my-tours",
@@ -26,6 +27,11 @@ router.get(
   TourControllers.getMyTours
 );
 
+router.get(
+  "/with-guide",
+  checkAuth(...Object.values(Role)),
+  TourControllers.getToursWithGuidInfo
+);
 // update tour guide only
 router.patch(
   "/:id",
@@ -40,7 +46,7 @@ router.patch(
 router.get(
   "/:id",
   checkAuth(...Object.values(Role)),
-  TourControllers.getSingleTour
+  TourControllers.getTourById
 );
 
 // deactivate tour and guide only

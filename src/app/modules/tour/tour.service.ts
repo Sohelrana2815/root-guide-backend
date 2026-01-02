@@ -178,8 +178,20 @@ const getMyTours = async (
   return { data: tours, meta: { total, page, limit } };
 };
 
-const getSingleTour = async (tourId: string) => {
-  const tour = await Tour.findById(tourId);
+const getToursWithGuidInfo = async () => {
+  const tours = await Tour.find({ isDeleted: { $ne: true } }).populate({
+    path: "guideId",
+    select: "_id name photo bio expertise languages averageRating isVerified",
+  });
+
+  return tours;
+};
+
+const getTourById = async (tourId: string) => {
+  const tour = await Tour.findById(tourId).populate({
+    path: "guideId",
+    select: "name photo bio expertise languages averageRating isVerified",
+  });
   return tour;
 };
 
@@ -319,7 +331,8 @@ export const TourServices = {
   getTours,
   getAllTours,
   getMyTours,
-  getSingleTour,
+  getToursWithGuidInfo,
+  getTourById,
   updateTour,
   deActivateTour,
   reactivateTour,

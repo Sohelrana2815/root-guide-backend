@@ -99,6 +99,9 @@ const getNewAccessToken = catchAsync(
 );
 const logout = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    // const message = {
+    //   success: true,
+    // };
     res.clearCookie("accessToken", {
       httpOnly: true,
       secure: false,

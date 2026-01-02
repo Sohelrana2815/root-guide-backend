@@ -11,7 +11,11 @@ const router = Router();
 router.get("/all-users", checkAuth(Role.ADMIN), UserControllers.getAllUsers);
 router.get("/me", checkAuth(...Object.values(Role)), UserControllers.getMe);
 
-// view single user profile by id all types of users can view user profile
+router.get(
+  "/guide/:id",
+  checkAuth(...Object.values(Role)),
+  UserControllers.getGuideById
+);
 
 // router.get("/:id",checkAuth(...Object.values(Role)), UserControllers.getSingleUser);
 

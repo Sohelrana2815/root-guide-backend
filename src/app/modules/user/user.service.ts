@@ -59,6 +59,24 @@ const getAllUsers = async (query: UserListQuery = {}) => {
   };
 };
 
+const getMe = async (userId: string) => {
+  const user = await User.findById(userId).select("-password");
+  return {
+    data: user,
+  };
+};
+
+const getGuideById = async (guideId: string) => {
+  const guide = await User.findById(guideId).select("-password");
+  const role = guide?.role;
+  if (role !== Role.GUIDE) {
+    throw new AppError(httpStatus.FORBIDDEN, "You are not a guide");
+  }
+  return {
+    data: guide,
+  };
+};
+
 const updateMyProfile = async (
   userId: string,
   payload: Partial<IUser>,
@@ -130,14 +148,8 @@ const updateMyProfile = async (
 
   return newUpdatedUser;
 };
-const getMe = async (userId: string) => {
-  const user = await User.findById(userId).select("-password");
-  return {
-    data: user,
-  };
-};
 
-export const updateUserRole = async (
+const updateUserRole = async (
   userId: string,
   targetRole: Role | string,
   decodedToken: JwtPayload
@@ -233,4 +245,5 @@ export const UserServices = {
   updateUserRole,
   blockUser,
   unblockUser,
+  getGuideById,
 };

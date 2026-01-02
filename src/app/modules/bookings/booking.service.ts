@@ -41,17 +41,10 @@ const createBooking = async (
       }
 
       // Enforce phone number requirement (from profile)
-      if (!tourist.phoneNumber) {
+      if (!tourist.phoneNumber && !tourist.address) {
         throw new AppError(
           httpStatus.BAD_REQUEST,
-          "Please add a phone number to your profile before creating a booking"
-        );
-      }
-
-      if (!tourist.address) {
-        throw new AppError(
-          httpStatus.BAD_REQUEST,
-          "Please add an address to your profile before creating a booking"
+          "Please add a phone number and address to your profile before booking a tour"
         );
       }
 
@@ -161,8 +154,11 @@ const createBooking = async (
 const getMyBookings = async (touristId: Types.ObjectId) => {
   const bookings = await Booking.find({ touristId })
     .populate("tourId", "title description price city images")
-    .populate("guideId", "name bio photo")
-    .populate("paymentId", "status amount transactionId")
+    .populate(
+      "guideId",
+      "name bio photo languages averageRating isVerified expertise address phoneNumber email"
+    )
+    .populate("paymentId", "status amount transactionId paymentUrl")
     .sort({ createdAt: -1 });
 
   return bookings;
@@ -344,13 +340,13 @@ const getAllBookings = async (filters?: {
 // 8. CHECK IF BOOKING IS ELIGIBLE FOR REVIEW
 // ============================================
 const isBookingEligibleForReview = async (
-  bookingId: string, 
+  bookingId: string,
   userId: Types.ObjectId
 ): Promise<boolean> => {
   const booking = await Booking.findOne({
     _id: bookingId,
     touristId: userId,
-    status: BookingStatus.COMPLETED
+    status: BookingStatus.COMPLETED,
   });
 
   return !!booking;

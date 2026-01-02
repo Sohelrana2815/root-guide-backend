@@ -12,7 +12,7 @@ import { JwtPayload } from "jsonwebtoken";
 
 const createUser = async (payload: Partial<IUser>) => {
   const { name, email, password, role, languages, ...rest } = payload;
-  console.log("Incoming createUser payload:", payload);
+  // console.log("Incoming createUser payload:", payload);
   const isUserExist = await User.findOne({ email });
 
   if (isUserExist) {

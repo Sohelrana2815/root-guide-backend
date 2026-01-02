@@ -72,7 +72,16 @@ const getMyTours = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const getSingleTour = catchAsync(async (req: Request, res: Response) => {
+const getToursWithGuidInfo = catchAsync(async (req: Request, res: Response) => {
+  const result = await TourServices.getToursWithGuidInfo();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Tours retrieved successfully",
+    data: result,
+  });
+});
+const getTourById = catchAsync(async (req: Request, res: Response) => {
   const authUser = req.user as AuthPayload;
 
   if (!authUser?.userId) {
@@ -80,7 +89,7 @@ const getSingleTour = catchAsync(async (req: Request, res: Response) => {
   }
   const { id } = req.params;
 
-  const result = await TourServices.getSingleTour(id);
+  const result = await TourServices.getTourById(id);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -197,7 +206,8 @@ export const TourControllers = {
   createTour,
   getTours,
   getAllTours,
-  getSingleTour,
+  getToursWithGuidInfo,
+  getTourById,
   getMyTours,
   updateTour,
   deActivateTour,
