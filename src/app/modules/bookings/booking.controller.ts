@@ -66,19 +66,19 @@ const getGuideBookings = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
-
-// ============================================
-// 4. GET BOOKING BY ID
-// ============================================
 const getBookingById = catchAsync(async (req: Request, res: Response) => {
   const authUser = req.user as AuthPayload;
-  const { id } = req.params;
-
   if (!authUser?.userId) {
     throw new AppError(httpStatus.UNAUTHORIZED, "User ID not found in request");
   }
 
-  const result = await BookingServices.getBookingById(id, authUser.userId);
+  const { id } = req.params;
+
+  const result = await BookingServices.getBookingById(
+    id,
+    authUser.userId,
+    authUser.role
+  );
 
   sendResponse(res, {
     statusCode: 200,
@@ -87,6 +87,10 @@ const getBookingById = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+// ============================================
+// 4. GET BOOKING BY ID
+// ============================================
 
 // ============================================
 // 5. UPDATE BOOKING STATUS (Guide only)
@@ -161,8 +165,8 @@ export const BookingControllers = {
   createBooking,
   getMyBookings,
   getGuideBookings,
-  getBookingById,
   updateBookingStatus,
   cancelBooking,
   getAllBookings,
+  getBookingById,
 };

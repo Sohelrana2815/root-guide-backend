@@ -11,6 +11,7 @@ import { Types } from "mongoose";
 import { SSLService } from "../sslCommerz/sslCommerz.service";
 import { ISSLCommerz } from "../sslCommerz/sslCommerz.interface";
 import { getTransactionId } from "@/app/utils/getTransactionId";
+import { Role } from "../user/user.interface";
 
 // ============================================
 // HELPER FUNCTION: Generate Transaction ID
@@ -41,10 +42,16 @@ const createBooking = async (
       }
 
       // Enforce phone number requirement (from profile)
-      if (!tourist.phoneNumber && !tourist.address) {
+      if (!tourist.phoneNumber) {
         throw new AppError(
           httpStatus.BAD_REQUEST,
           "Please add a phone number and address to your profile before booking a tour"
+        );
+      }
+      if (!tourist.address) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          "Please add an address to your profile before booking a tour"
         );
       }
 
@@ -180,30 +187,6 @@ const getGuideBookings = async (guideId: Types.ObjectId) => {
 // ============================================
 // 4. GET BOOKING BY ID
 // ============================================
-const getBookingById = async (bookingId: string, userId: Types.ObjectId) => {
-  const booking = await Booking.findById(bookingId)
-    .populate("touristId", "name email address")
-    .populate("tourId", "title description price duration city guideId")
-    .populate("guideId", "name bio email")
-    .populate("paymentId");
-
-  if (!booking) {
-    throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
-  }
-
-  // Verify user is either tourist or guide of this booking
-  if (
-    booking.touristId.toString() !== userId.toString() &&
-    booking.guideId.toString() !== userId.toString()
-  ) {
-    throw new AppError(
-      httpStatus.FORBIDDEN,
-      "You are not authorized to view this booking"
-    );
-  }
-
-  return booking;
-};
 
 // ============================================
 // 5. UPDATE BOOKING STATUS (Guide accepts/rejects)
@@ -336,6 +319,43 @@ const getAllBookings = async (filters?: {
   return bookings;
 };
 
+const getBookingById = async (
+  bookingId: string,
+  requesterId: Types.ObjectId,
+  requesterRole?: Role
+) => {
+  const booking = await Booking.findById(bookingId)
+    .populate("touristId", "name email phoneNumber")
+    .populate("tourId", "title description price city image")
+    .populate(
+      "guideId",
+      "name email bio photo languages averageRating isVerified expertise address"
+    )
+    .populate("paymentId")
+    .populate("review")
+    .exec();
+
+  if (!booking) {
+    throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
+  }
+  // Admins can view any booking
+  if (requesterRole === Role.ADMIN) {
+    return booking;
+  }
+  // Otherwise ensure requester is either the tourist or the guide
+  const requesterIdStr = requesterId.toString();
+  const isTourist = booking.touristId._id?.toString() === requesterIdStr;
+  const isGuide = booking.guideId._id?.toString() === requesterIdStr;
+
+  if (!isTourist && !isGuide) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to view this booking"
+    );
+  }
+  return booking;
+};
+
 // ============================================
 // 8. CHECK IF BOOKING IS ELIGIBLE FOR REVIEW
 // ============================================
@@ -356,9 +376,9 @@ export const BookingServices = {
   createBooking,
   getMyBookings,
   getGuideBookings,
-  getBookingById,
   updateBookingStatus,
   cancelBooking,
   getAllBookings,
+  getBookingById,
   isBookingEligibleForReview,
 };

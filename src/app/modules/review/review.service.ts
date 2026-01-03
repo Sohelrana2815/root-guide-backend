@@ -55,11 +55,18 @@ const createReview = async (
 };
 
 const getTourReviews = async (tourId: string) => {
+  const total = await Review.countDocuments({ tourId });
+
   const result = await Review.find({ tourId })
     .populate("touristId", "name photo")
     .sort({ createdAt: -1 });
 
-  return result;
+  return {
+    data: result,
+    meta: {
+      total,
+    },
+  };
 };
 
 const getGuideReviews = async (guideId: string) => {

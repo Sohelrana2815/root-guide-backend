@@ -50,9 +50,10 @@ router.get(
 // ============================================
 // GET /api/bookings/:id
 // Auth: Any authenticated user (must be tourist or guide of the booking)
+
 router.get(
   "/:id",
-  checkAuth(Role.TOURIST, Role.GUIDE),
+  checkAuth(Role.TOURIST, Role.GUIDE, Role.ADMIN),
   BookingControllers.getBookingById
 );
 

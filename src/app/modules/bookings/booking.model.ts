@@ -50,9 +50,17 @@ const bookingSchema = new Schema<IBooking>(
   {
     timestamps: true,
     versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 
+bookingSchema.virtual("review", {
+  ref: "Review",
+  localField: "_id",
+  foreignField: "bookingId",
+  justOne: true,
+});
 // Optimization: Indexes for faster queries on Dashboards
 // 1. Tourist Dashboard: "Show my bookings"
 bookingSchema.index({ touristId: 1 });
@@ -61,4 +69,5 @@ bookingSchema.index({ guideId: 1 });
 // 3. Tour Page: "Show bookings for this specific tour"
 bookingSchema.index({ tourId: 1 });
 
-export const Booking = models.Booking || model<IBooking>("Booking", bookingSchema);
+export const Booking =
+  models.Booking || model<IBooking>("Booking", bookingSchema);

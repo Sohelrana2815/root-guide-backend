@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { IReview } from "../review/review.interface";
 
 export enum BookingStatus {
   PENDING = "PENDING",
@@ -19,6 +20,7 @@ export interface IBooking {
   bookingDate: Date;
   totalPrice: number;
   status: BookingStatus;
+  review?: IReview;
   createdAt?: Date;
   updatedAt?: Date;
 }
