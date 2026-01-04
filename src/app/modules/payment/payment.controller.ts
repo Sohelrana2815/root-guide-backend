@@ -34,6 +34,19 @@ const successPayment = catchAsync(async (req: Request, res: Response) => {
       )}&amount=${amount}&status=success`
     );
   }
+  // টেস্টিং করার সময় res.redirect কমেন্ট করে এটি ব্যবহার করুন:
+  // if (result.success) {
+  //   return sendResponse(res, {
+  //     statusCode: 200,
+  //     success: true,
+  //     message: "Payment successfully processed",
+  //     data: {
+  //       transactionId: tx,
+  //       amount: amount,
+  //       status: "PAID",
+  //     },
+  //   });
+  // }
 });
 
 const failPayment = catchAsync(async (req: Request, res: Response) => {

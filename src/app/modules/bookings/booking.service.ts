@@ -175,13 +175,19 @@ const getMyBookings = async (touristId: Types.ObjectId) => {
 // 3. GET GUIDE BOOKINGS (Guide's tour bookings)
 // ============================================
 const getGuideBookings = async (guideId: Types.ObjectId) => {
+  const total = await Booking.countDocuments({ guideId });
   const bookings = await Booking.find({ guideId })
     .populate("touristId", "name email")
     .populate("tourId", "title price")
     .populate("paymentId", "status amount transactionId")
     .sort({ createdAt: -1 });
 
-  return bookings;
+  return {
+    data: bookings,
+    meta: {
+      total,
+    },
+  };
 };
 
 // ============================================
@@ -196,6 +202,13 @@ const updateBookingStatus = async (
   guideId: Types.ObjectId,
   newStatus: BookingStatus
 ) => {
+  if (newStatus === BookingStatus.PAID) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You cannot manually set status to PAID. Payment must be verified via gateway."
+    );
+  }
+
   const booking = await Booking.findById(bookingId);
 
   if (!booking) {
@@ -213,7 +226,10 @@ const updateBookingStatus = async (
   // Validate status transitions
   const validTransitions: Record<BookingStatus, BookingStatus[]> = {
     [BookingStatus.PENDING]: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
-    [BookingStatus.CONFIRMED]: [BookingStatus.PAID, BookingStatus.CANCELLED],
+    [BookingStatus.CONFIRMED]: [
+      BookingStatus.COMPLETED,
+      BookingStatus.CANCELLED,
+    ],
     [BookingStatus.PAID]: [BookingStatus.COMPLETED, BookingStatus.CANCELLED],
     [BookingStatus.COMPLETED]: [],
     [BookingStatus.CANCELLED]: [],

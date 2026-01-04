@@ -22,4 +22,6 @@ router.get("/tour/:tourId", ReviewControllers.getTourReviews);
 // GET /api/reviews/guide/:guideId
 router.get("/guide/:guideId", ReviewControllers.getGuideReviews);
 
+router.get("/public", ReviewControllers.getPublicReviews);
+
 export const ReviewRoutes = router;

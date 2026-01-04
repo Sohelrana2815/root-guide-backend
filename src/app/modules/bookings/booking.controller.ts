@@ -63,7 +63,8 @@ const getGuideBookings = catchAsync(async (req: Request, res: Response) => {
     statusCode: 200,
     success: true,
     message: "Guide bookings retrieved successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 const getBookingById = catchAsync(async (req: Request, res: Response) => {

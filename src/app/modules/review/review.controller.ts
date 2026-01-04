@@ -37,6 +37,16 @@ const getTourReviews = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getPublicReviews = catchAsync(async (req: Request, res: Response) => {
+  const result = await ReviewServices.getPublicReviews();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Public reviews retrieved successfully",
+    data: result,
+  });
+});
+
 const getGuideReviews = catchAsync(async (req: Request, res: Response) => {
   const { guideId } = req.params;
 
@@ -54,4 +64,5 @@ export const ReviewControllers = {
   createReview,
   getTourReviews,
   getGuideReviews,
+  getPublicReviews,
 };

@@ -9,7 +9,6 @@ import { SSLService } from "../sslCommerz/sslCommerz.service";
 import { PAYMENT_STATUS } from "./payment.interface";
 import { BookingStatus } from "../bookings/booking.interface";
 
-
 const initPayment = async (bookingId: string) => {
   // Find payment by bookingId
   const payment = await Payment.findOne({ bookingId });
@@ -58,33 +57,51 @@ const initPayment = async (bookingId: string) => {
     raw: sslPayment,
   };
 };
-const successPayment = async (query: Record<string, string>) => {
-  // Update Booking Status to COnfirm
-  // Update Payment Status to PAID
 
+const successPayment = async (query: Record<string, string>) => {
   const session = await Booking.startSession();
   session.startTransaction();
 
   try {
-    const tx = (query.transactionId || query.tran_id || query.tranId || query.tranID) as string;
+    const tx = (query.transactionId ||
+      query.tran_id ||
+      query.tranId ||
+      query.tranID) as string;
     if (!tx) {
-      throw new AppError(httpStatus.BAD_REQUEST, "No transaction identifier provided");
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "No transaction identifier provided"
+      );
     }
 
-    const payment = await Payment.findOne({ transactionId: tx }).session(session);
+    const payment = await Payment.findOne({ transactionId: tx }).session(
+      session
+    );
     if (!payment) {
-      throw new AppError(httpStatus.NOT_FOUND, `Payment record not found for transaction ${tx}`);
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        `Payment record not found for transaction ${tx}`
+      );
     }
 
+    // ১. update payment record
     payment.status = PAYMENT_STATUS.PAID;
-    payment.paymentGatewayData = { ...(payment.paymentGatewayData || {}), receivedQuery: query };
+    payment.paymentGatewayData = {
+      ...(payment.paymentGatewayData || {}),
+      receivedQuery: query,
+    };
     await payment.save({ session });
 
-    await Booking.findByIdAndUpdate(
-      payment.bookingId,
-      { status: BookingStatus.PAID },
-      { runValidators: true, session }
-    );
+    // check condition
+    const booking = await Booking.findById(payment.bookingId).session(session);
+
+    if (booking) {
+      // if booking not completed then mark it as paid
+      if (booking.status !== BookingStatus.COMPLETED) {
+        booking.status = BookingStatus.PAID;
+        await booking.save({ session, runValidators: true });
+      }
+    }
 
     await session.commitTransaction();
     session.endSession();
@@ -95,6 +112,7 @@ const successPayment = async (query: Record<string, string>) => {
     throw error;
   }
 };
+
 const failPayment = async (query: Record<string, string>) => {
   // Update Booking Status to FAIL
   // Update Payment Status to FAIL
@@ -103,18 +121,32 @@ const failPayment = async (query: Record<string, string>) => {
   session.startTransaction();
 
   try {
-    const tx = (query.transactionId || query.tran_id || query.tranId || query.tranID) as string;
+    const tx = (query.transactionId ||
+      query.tran_id ||
+      query.tranId ||
+      query.tranID) as string;
     if (!tx) {
-      throw new AppError(httpStatus.BAD_REQUEST, "No transaction identifier provided");
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "No transaction identifier provided"
+      );
     }
 
-    const payment = await Payment.findOne({ transactionId: tx }).session(session);
+    const payment = await Payment.findOne({ transactionId: tx }).session(
+      session
+    );
     if (!payment) {
-      throw new AppError(httpStatus.NOT_FOUND, `Payment record not found for transaction ${tx}`);
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        `Payment record not found for transaction ${tx}`
+      );
     }
 
     payment.status = PAYMENT_STATUS.FAILED;
-    payment.paymentGatewayData = { ...(payment.paymentGatewayData || {}), receivedQuery: query };
+    payment.paymentGatewayData = {
+      ...(payment.paymentGatewayData || {}),
+      receivedQuery: query,
+    };
     await payment.save({ session });
 
     await Booking.findByIdAndUpdate(
@@ -140,18 +172,32 @@ const cancelPayment = async (query: Record<string, string>) => {
   session.startTransaction();
 
   try {
-    const tx = (query.transactionId || query.tran_id || query.tranId || query.tranID) as string;
+    const tx = (query.transactionId ||
+      query.tran_id ||
+      query.tranId ||
+      query.tranID) as string;
     if (!tx) {
-      throw new AppError(httpStatus.BAD_REQUEST, "No transaction identifier provided");
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "No transaction identifier provided"
+      );
     }
 
-    const payment = await Payment.findOne({ transactionId: tx }).session(session);
+    const payment = await Payment.findOne({ transactionId: tx }).session(
+      session
+    );
     if (!payment) {
-      throw new AppError(httpStatus.NOT_FOUND, `Payment record not found for transaction ${tx}`);
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        `Payment record not found for transaction ${tx}`
+      );
     }
 
     payment.status = PAYMENT_STATUS.CANCELLED;
-    payment.paymentGatewayData = { ...(payment.paymentGatewayData || {}), receivedQuery: query };
+    payment.paymentGatewayData = {
+      ...(payment.paymentGatewayData || {}),
+      receivedQuery: query,
+    };
     await payment.save({ session });
 
     await Booking.findByIdAndUpdate(

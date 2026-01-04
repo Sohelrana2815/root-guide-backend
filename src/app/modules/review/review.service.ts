@@ -78,8 +78,17 @@ const getGuideReviews = async (guideId: string) => {
   return result;
 };
 
+const getPublicReviews = async () => {
+  const result = await Review.find()
+    .select("touristId rating comment")
+    .populate("touristId", "name photo");
+
+  return result;
+};
+
 export const ReviewServices = {
   createReview,
   getTourReviews,
   getGuideReviews,
+  getPublicReviews,
 };
