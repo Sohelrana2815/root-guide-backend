@@ -17,7 +17,7 @@ router.post(
 );
 
 // see all tours admin only
-router.get("/all-tours", checkAuth(Role.ADMIN), TourControllers.getAllTours);
+router.get("/all-tours", TourControllers.getAllTours);
 router.get("/", TourControllers.getTours);
 
 // see my tours guide only
@@ -27,11 +27,7 @@ router.get(
   TourControllers.getMyTours
 );
 
-router.get(
-  "/with-guide",
-  checkAuth(...Object.values(Role)),
-  TourControllers.getToursWithGuidInfo
-);
+router.get("/with-guide", TourControllers.getToursWithGuidInfo);
 // update tour guide only
 router.patch(
   "/:id",

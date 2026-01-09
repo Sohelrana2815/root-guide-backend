@@ -52,8 +52,13 @@ const initPayment = async (bookingId: string) => {
 
   const sslPayment = await SSLService.sslPaymentInit(sslPayload);
 
+  // Store paymentUrl in database for pay-later scenarios
+  const paymentUrl = sslPayment?.GatewayPageURL;
+  payment.paymentUrl = paymentUrl;
+  await payment.save();
+
   return {
-    paymentUrl: sslPayment?.GatewayPageURL,
+    paymentUrl: paymentUrl,
     raw: sslPayment,
   };
 };
@@ -216,9 +221,33 @@ const cancelPayment = async (query: Record<string, string>) => {
   }
 };
 
+const getPaymentByBookingId = async (bookingId: string) => {
+  const payment = await Payment.findOne({ bookingId });
+
+  if (!payment) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      "Payment record not found for this booking"
+    );
+  }
+
+  return {
+    _id: payment._id,
+    bookingId: payment.bookingId,
+    transactionId: payment.transactionId,
+    status: payment.status,
+    amount: payment.amount,
+    paymentUrl: payment.paymentUrl,
+    paymentMethod: payment.paymentMethod,
+    createdAt: payment.createdAt,
+    updatedAt: payment.updatedAt,
+  };
+};
+
 export const PaymentServices = {
   initPayment,
   successPayment,
   failPayment,
   cancelPayment,
+  getPaymentByBookingId,
 };

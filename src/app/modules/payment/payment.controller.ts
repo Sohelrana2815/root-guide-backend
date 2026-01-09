@@ -102,10 +102,22 @@ const validatePayment = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getPaymentByBookingId = catchAsync(async (req: Request, res: Response) => {
+  const { bookingId } = req.params;
+  const result = await PaymentServices.getPaymentByBookingId(bookingId);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Payment details retrieved successfully",
+    data: result,
+  });
+});
+
 export const PaymentController = {
   initPayment,
   successPayment,
   failPayment,
   cancelPayment,
   validatePayment,
+  getPaymentByBookingId,
 };

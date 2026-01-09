@@ -73,7 +73,7 @@ const getMyTours = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getToursWithGuidInfo = catchAsync(async (req: Request, res: Response) => {
-  const result = await TourServices.getToursWithGuidInfo();
+  const result = await TourServices.getToursWithGuidInfo(req.query as any);
   sendResponse(res, {
     statusCode: 200,
     success: true,

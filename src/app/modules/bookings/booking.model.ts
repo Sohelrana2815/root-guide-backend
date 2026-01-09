@@ -38,6 +38,11 @@ const bookingSchema = new Schema<IBooking>(
       required: [true, "Total price is required"],
       min: [0, "Total price cannot be negative"],
     },
+    commissionAmount: {
+      type: Number,
+      required: true,
+    },
+    guideEarnings: { type: Number, required: true },
     status: {
       type: String,
       enum: {
@@ -46,6 +51,8 @@ const bookingSchema = new Schema<IBooking>(
       },
       default: BookingStatus.PENDING,
     },
+    isActive: { type: Boolean, default: true },
+    isDeleted: { type: Boolean, default: false },
   },
   {
     timestamps: true,

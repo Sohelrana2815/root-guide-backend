@@ -46,6 +46,20 @@ const getGuideById = catchAsync(
     });
   }
 );
+
+// get all guides for filter
+const getAllGuidesForFilter = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await UserServices.getAllGuidesForFilter();
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Guides fetched successfully for filter",
+      data: result,
+    });
+  }
+);
 const updateMyProfile = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     // console.log(req.body, "From controller");
@@ -160,6 +174,7 @@ const deleteUser = catchAsync(
 
 export const UserControllers = {
   getAllUsers,
+  getAllGuidesForFilter,
   getGuideById,
   updateMyProfile,
   deleteUser,

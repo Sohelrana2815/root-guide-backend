@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { deleteImageFromCLoudinary } from "@/app/config/cloudinary.config";
 import { ITour } from "./tour.interface";
 import { Tour } from "./tour.model";
@@ -23,7 +24,51 @@ interface TourListQuery {
   sortBy?: string;
   sortOrder?: string;
   language?: string | string[];
+  minPrice?: string | number;
+  maxPrice?: string | number;
 }
+const buildTourListFilters = (
+  query: TourListQuery,
+  baseFilter: Record<string, unknown>
+) => {
+  const searchTerm =
+    typeof query.searchTerm === "string" ? query.searchTerm.trim() : undefined;
+  const category =
+    typeof query.category === "string" ? query.category : undefined;
+  const city = typeof query.city === "string" ? query.city : undefined;
+  const language = query.language;
+
+  // Price Range logic
+  const minPrice = query.minPrice ? Number(query.minPrice) : undefined;
+  const maxPrice = query.maxPrice ? Number(query.maxPrice) : undefined;
+
+  const andConditions: Record<string, unknown>[] = [baseFilter];
+
+  if (category) andConditions.push({ category });
+  if (city) andConditions.push({ city });
+
+  if (language) {
+    const languagesArray = Array.isArray(language) ? language : [language];
+    andConditions.push({ languages: { $in: languagesArray } });
+  }
+
+  // Price Range Filter
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    const priceFilter: any = {};
+    if (minPrice !== undefined) priceFilter.$gte = minPrice;
+    if (maxPrice !== undefined) priceFilter.$lte = maxPrice;
+    andConditions.push({ price: priceFilter });
+  }
+
+  if (searchTerm) {
+    const regex = { $regex: searchTerm, $options: "i" };
+    andConditions.push({
+      $or: [{ title: regex }, { itinerary: regex }, { city: regex }],
+    });
+  }
+
+  return andConditions.length > 1 ? { $and: andConditions } : baseFilter;
+};
 
 const createTour = async (payload: ITour) => {
   // Validate that guideId is provided
@@ -49,47 +94,6 @@ const getTours = async () => {
 
 const notDeletedFilter: Record<string, unknown> = {
   $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-};
-
-const buildTourListFilters = (
-  query: TourListQuery,
-  baseFilter: Record<string, unknown>
-) => {
-  const searchTerm =
-    typeof query.searchTerm === "string" ? query.searchTerm.trim() : undefined;
-  const category =
-    typeof query.category === "string" ? query.category : undefined;
-  const city = typeof query.city === "string" ? query.city : undefined;
-
-  // 1. Get the language from query
-  const language = query.language;
-
-  const andConditions: Record<string, unknown>[] = [baseFilter];
-
-  if (category) {
-    andConditions.push({ category });
-  }
-
-  if (city) {
-    andConditions.push({ city });
-  }
-
-  // 2. language filter logic
-  if (language) {
-    const languagesArray = Array.isArray(language) ? language : [language];
-    andConditions.push({
-      languages: { $in: languagesArray },
-    });
-  }
-
-  if (searchTerm) {
-    const regex = { $regex: searchTerm, $options: "i" };
-    andConditions.push({
-      $or: [{ title: regex }, { itinerary: regex }, { city: regex }],
-    });
-  }
-
-  return andConditions.length > 1 ? { $and: andConditions } : baseFilter;
 };
 
 const parsePagination = (query: TourListQuery) => {
@@ -178,13 +182,28 @@ const getMyTours = async (
   return { data: tours, meta: { total, page, limit } };
 };
 
-const getToursWithGuidInfo = async () => {
-  const tours = await Tour.find({ isDeleted: { $ne: true } }).populate({
-    path: "guideId",
-    select: "_id name photo bio expertise languages averageRating isVerified",
+const getToursWithGuidInfo = async (query: TourListQuery) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 12;
+  const skip = (page - 1) * limit;
+
+  const filters = buildTourListFilters(query, {
+    isActive: true,
+    isDeleted: { $ne: true },
   });
 
-  return tours;
+  const tours = await Tour.find(filters)
+    .populate("guideId", "name photo email")
+    .skip(skip)
+    .limit(limit)
+    .sort("-createdAt");
+
+  const total = await Tour.countDocuments(filters);
+
+  return {
+    data: tours,
+    meta: { total, page, limit },
+  };
 };
 
 const getTourById = async (tourId: string) => {

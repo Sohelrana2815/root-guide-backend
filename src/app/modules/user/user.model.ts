@@ -42,7 +42,7 @@ const userSchema = new Schema<IUser>(
     address: { type: String },
     expertise: [{ type: String }],
     dailyRate: { type: Number, min: 0 },
-    averageRating: { type: Number, min: 1, max: 5, default: 0 },
+    averageRating: { type: Number, min: 0, max: 5, default: 0 },
     preferences: [{ type: String }],
   },
   {

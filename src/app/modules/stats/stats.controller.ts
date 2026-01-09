@@ -1,52 +1,49 @@
-// controllers/stats.controller.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response } from "express";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { StatsService } from "./stats.service";
+import httpStatus from "http-status";
 
-const getBookingStats = catchAsync(async (req: Request, res: Response) => {
-    const stats = await StatsService.getBookingStats();
-    sendResponse(res, {
-        statusCode: 200,
-        success: true,
-        message: "Booking stats fetched successfully",
-        data: stats,
-    });
+const getAdminSummary = catchAsync(async (req: Request, res: Response) => {
+  const result = await StatsService.getAdminDashboardSummary();
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Admin dashboard summary fetched successfully",
+    data: result,
+  });
 });
 
-const getPaymentStats = catchAsync(async (req: Request, res: Response) => {
-    const stats = await StatsService.getPaymentStats();
-    sendResponse(res, {
-        statusCode: 200,
-        success: true,
-        message: "Payment stats fetched successfully",
-        data: stats,
-    });
+const getGuideSummary = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.user as any;
+
+  const result = await StatsService.getGuideDashboardSummary(userId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Guide dashboard summary fetched successfully",
+    data: result,
+  });
 });
 
-const getUserStats = catchAsync(async (req: Request, res: Response) => {
-    const stats = await StatsService.getUserStats();
-    sendResponse(res, {
-        statusCode: 200,
-        success: true,
-        message: "User stats fetched successfully",
-        data: stats,
-    });
-});
+const getTouristSummary = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.user as any;
 
-const getTourStats = catchAsync(async (req: Request, res: Response) => {
-    const stats = await StatsService.getTourStats();
-    sendResponse(res, {
-        statusCode: 200,
-        success: true,
-        message: "Tour stats fetched successfully",
-        data: stats,
-    });
+  const result = await StatsService.getTouristDashboardSummary(userId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Tourist dashboard summary fetched successfully",
+    data: result,
+  });
 });
 
 export const StatsController = {
-    getBookingStats,
-    getPaymentStats,
-    getUserStats,
-    getTourStats,
+  getAdminSummary,
+  getGuideSummary,
+  getTouristSummary,
 };

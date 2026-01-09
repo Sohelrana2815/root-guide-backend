@@ -17,6 +17,12 @@ router.get(
   UserControllers.getGuideById
 );
 
+router.get(
+  "/guides-filter",
+  checkAuth(Role.ADMIN),
+  UserControllers.getAllGuidesForFilter
+);
+
 // router.get("/:id",checkAuth(...Object.values(Role)), UserControllers.getSingleUser);
 
 // action change user status

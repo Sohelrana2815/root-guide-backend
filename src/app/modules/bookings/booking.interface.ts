@@ -19,7 +19,11 @@ export interface IBooking {
   guestCount: number;
   bookingDate: Date;
   totalPrice: number;
+  commissionAmount: number;
+  guideEarnings: number;
   status: BookingStatus;
+  isActive?: boolean;
+  isDeleted?: boolean;
   review?: IReview;
   createdAt?: Date;
   updatedAt?: Date;

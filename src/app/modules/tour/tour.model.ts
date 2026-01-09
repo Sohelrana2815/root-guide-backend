@@ -81,6 +81,7 @@ const tourSchema = new Schema<ITour>(
       default: 0,
       min: 0,
       max: 5,
+      
     },
     reviewCount: {
       type: Number, 

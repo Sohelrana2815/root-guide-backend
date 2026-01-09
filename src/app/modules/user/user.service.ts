@@ -77,6 +77,14 @@ const getGuideById = async (guideId: string) => {
   };
 };
 
+const getAllGuidesForFilter = async () => {
+  const result = await User.find({
+    role: Role.GUIDE,
+    isDeleted: { $ne: true },
+  }).select("_id name");
+  return result;
+};
+
 const updateMyProfile = async (
   userId: string,
   payload: Partial<IUser>,
@@ -240,6 +248,7 @@ const deleteUser = async (userId: string, decodedToken: JwtPayload) => {
 export const UserServices = {
   getAllUsers,
   updateMyProfile,
+  getAllGuidesForFilter,
   deleteUser,
   getMe,
   updateUserRole,

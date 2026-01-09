@@ -13,13 +13,76 @@ import { ISSLCommerz } from "../sslCommerz/sslCommerz.interface";
 import { getTransactionId } from "@/app/utils/getTransactionId";
 import { Role } from "../user/user.interface";
 
-// ============================================
-// HELPER FUNCTION: Generate Transaction ID
-// ============================================
+interface BookingQuery {
+  page?: string | number;
+  limit?: string | number;
+  searchTerm?: string;
+  status?: string;
+  guideId?: string;
+  days?: string; // last 7 or 30 days
+  isActive?: string;
+  isDeleted?: string;
+}
 
-// ============================================
+const buildBookingFilters = async (query: BookingQuery) => {
+  const { searchTerm, status, guideId, days, isActive, isDeleted } = query;
+
+  const andConditions: any[] = [];
+  // filter deleted booking vs non deleted
+  if (isDeleted === "true") {
+    andConditions.push({ isDeleted: true });
+  } else {
+    andConditions.push({ isDeleted: { $ne: true } });
+  }
+
+  // Filter active and deactive booking
+
+  if (isActive === "true") {
+    andConditions.push({ isActive: true });
+  } else if (isActive === "false") {
+    andConditions.push({ isActive: false });
+  }
+
+  // 1. Normal filter
+
+  if (status) andConditions.push({ status });
+  if (guideId) andConditions.push({ guideId: new Types.ObjectId(guideId) });
+
+  // 2. date range filter
+  if (days) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - Number(days));
+    andConditions.push({ createdAt: { $gte: startDate } });
+  }
+
+  // 3. Search term (TXN ID or Tourist Name)
+
+  if (searchTerm) {
+    // search/find bookingId using TXN ID form Payment model
+
+    const payments = await Payment.find({
+      transactionId: { $regex: searchTerm, $options: "i" },
+    }).select("bookingId");
+    const bookingIdsFromPayment = payments.map((p) => p.bookingId);
+
+    // Find tourist id using the username from USER model
+    const tourists = await User.find({
+      name: { $regex: searchTerm, $options: "i" },
+    }).select("_id");
+    const touristIds = tourists.map((t) => t._id);
+
+    andConditions.push({
+      $or: [
+        { _id: { $in: bookingIdsFromPayment } },
+        { touristId: { $in: touristIds } },
+      ],
+    });
+  }
+
+  return andConditions.length > 0 ? { $and: andConditions } : {};
+};
+
 // 1. CREATE BOOKING
-// ============================================
 const createBooking = async (
   payload: Partial<IBooking>,
   touristId: Types.ObjectId
@@ -80,6 +143,12 @@ const createBooking = async (
       // Calculate total price
       const totalPrice = Number(tour.price) * Number(payload.guestCount);
 
+      // 15 % commission calculation
+      const commissionAmount = totalPrice * 0.15;
+
+      // Guide solid income 85 % of total price
+      const guideEarnings = totalPrice - commissionAmount;
+
       // Create booking document within session
       const bookingDoc = new Booking({
         touristId,
@@ -88,6 +157,8 @@ const createBooking = async (
         guestCount: payload.guestCount,
         // bookingDate: payload.bookingDate,
         totalPrice,
+        commissionAmount,
+        guideEarnings,
         status: BookingStatus.PENDING,
       });
 
@@ -155,9 +226,38 @@ const createBooking = async (
   }
 };
 
-// ============================================
+//  get all bookings (admin)
+
+const getAdminBookings = async (query: BookingQuery) => {
+  // Pagination setup
+
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+
+  const skip = (page - 1) * limit;
+
+  // Build filter
+  const filters = await buildBookingFilters(query);
+
+  // Data fetch with population
+
+  const bookings = await Booking.find(filters)
+    .populate("touristId", "name email photo address")
+    .populate("tourId", "title price city")
+    .populate("guideId", "name email")
+    .populate("paymentId", "transactionId status amount")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Booking.countDocuments(filters);
+  return {
+    data: bookings,
+    meta: { total, page, limit },
+  };
+};
+
 // 2. GET MY BOOKINGS (Tourist's bookings)
-// ============================================
 const getMyBookings = async (touristId: Types.ObjectId) => {
   const bookings = await Booking.find({ touristId })
     .populate("tourId", "title description price city images")
@@ -171,35 +271,43 @@ const getMyBookings = async (touristId: Types.ObjectId) => {
   return bookings;
 };
 
-// ============================================
 // 3. GET GUIDE BOOKINGS (Guide's tour bookings)
-// ============================================
-const getGuideBookings = async (guideId: Types.ObjectId) => {
-  const total = await Booking.countDocuments({ guideId });
-  const bookings = await Booking.find({ guideId })
-    .populate("touristId", "name email")
-    .populate("tourId", "title price")
-    .populate("paymentId", "status amount transactionId")
-    .sort({ createdAt: -1 });
+const getGuideBookings = async (
+  guideId: Types.ObjectId,
+  query: BookingQuery
+) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  // guideId যেহেতু অলরেডি ObjectId, তাই ফিল্টার পাঠানোর সময় .toString() করে পাঠানো নিরাপদ
+  const filter = await buildBookingFilters({
+    ...query,
+    guideId: guideId.toString(), // buildBookingFilters string এক্সপেক্ট করলে এটি কাজ করবে
+  });
+
+  const [bookings, total] = await Promise.all([
+    Booking.find(filter)
+      .populate("touristId", "name email phoneNumber address")
+      .populate("tourId", "title price")
+      .populate("paymentId", "status amount transactionId")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Booking.countDocuments(filter),
+  ]);
 
   return {
     data: bookings,
-    meta: {
-      total,
-    },
+    meta: { total, page, limit },
   };
 };
 
-// ============================================
-// 4. GET BOOKING BY ID
-// ============================================
-
-// ============================================
-// 5. UPDATE BOOKING STATUS (Guide accepts/rejects)
-// ============================================
+// update booking status
 const updateBookingStatus = async (
   bookingId: string,
-  guideId: Types.ObjectId,
+  userId: Types.ObjectId,
+  userRole: string,
   newStatus: BookingStatus
 ) => {
   if (newStatus === BookingStatus.PAID) {
@@ -214,13 +322,14 @@ const updateBookingStatus = async (
   if (!booking) {
     throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
   }
-
-  // Verify guide owns this booking
-  if (booking.guideId.toString() !== guideId.toString()) {
-    throw new AppError(
-      httpStatus.FORBIDDEN,
-      "You can only update your own bookings"
-    );
+  // Check user is not admin and valid guide for that booking
+  if (userRole !== Role.ADMIN) {
+    if (booking.guideId.toString() !== userId.toString()) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "You can only update your own bookings"
+      );
+    }
   }
 
   // Validate status transitions
@@ -256,9 +365,7 @@ const updateBookingStatus = async (
   return updatedBooking;
 };
 
-// ============================================
 // 6. CANCEL BOOKING
-// ============================================
 const cancelBooking = async (bookingId: string, userId: Types.ObjectId) => {
   const booking = await Booking.findById(bookingId);
 
@@ -305,35 +412,7 @@ const cancelBooking = async (bookingId: string, userId: Types.ObjectId) => {
   return updatedBooking;
 };
 
-// ============================================
-// 7. GET ALL BOOKINGS (Admin only)
-// ============================================
-const getAllBookings = async (filters?: {
-  status?: BookingStatus;
-  tourId?: string;
-  guideId?: string;
-}) => {
-  const query: Record<string, BookingStatus | string> = {};
-
-  if (filters?.status) {
-    query.status = filters.status;
-  }
-  if (filters?.tourId) {
-    query.tourId = filters.tourId;
-  }
-  if (filters?.guideId) {
-    query.guideId = filters.guideId;
-  }
-
-  const bookings = await Booking.find(query)
-    .populate("touristId", "name email")
-    .populate("tourId", "title price")
-    .populate("guideId", "name email")
-    .populate("paymentId", "status amount")
-    .sort({ createdAt: -1 });
-
-  return bookings;
-};
+// 4. GET BOOKING BY ID
 
 const getBookingById = async (
   bookingId: string,
@@ -372,9 +451,7 @@ const getBookingById = async (
   return booking;
 };
 
-// ============================================
 // 8. CHECK IF BOOKING IS ELIGIBLE FOR REVIEW
-// ============================================
 const isBookingEligibleForReview = async (
   bookingId: string,
   userId: Types.ObjectId
@@ -388,13 +465,49 @@ const isBookingEligibleForReview = async (
   return !!booking;
 };
 
+// Active deactivate booking
+
+const toggleBookingActiveStatus = async (id: string) => {
+  const booking = await Booking.findById(id);
+
+  if (!booking) {
+    throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
+  }
+
+  // toggle true/false
+  booking.isActive = !booking.isActive;
+  booking.isDeleted = false;
+  const result = await booking.save();
+  return result;
+};
+
+// Soft delete booking
+
+const softDeleteBooking = async (id: string) => {
+  const booking = await Booking.findById(id);
+
+  if (!booking) {
+    throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
+  }
+  if (booking.isDeleted) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Booking is already deleted");
+  }
+
+  booking.isDeleted = true;
+  booking.isActive = false;
+  const result = await booking.save();
+  return result;
+};
+
 export const BookingServices = {
   createBooking,
   getMyBookings,
   getGuideBookings,
+  getAdminBookings,
   updateBookingStatus,
   cancelBooking,
-  getAllBookings,
   getBookingById,
   isBookingEligibleForReview,
+  toggleBookingActiveStatus,
+  softDeleteBooking,
 };

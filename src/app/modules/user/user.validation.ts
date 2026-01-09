@@ -99,7 +99,7 @@ export const updateUserZodSchema = z.object({
       error: "Expertise must be at least 1 item long",
     })
     .optional(),
-  dailyRate: z
+  dailyRate: z.coerce
     .number({ error: "DailyRate must be number" })
     .min(1, { error: "DailyRate must be at least 1" })
     .optional(),

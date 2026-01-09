@@ -26,6 +26,10 @@ const paymentSchema = new Schema<IPayment>(
     paymentMethod: {
       type: String,
     },
+    paymentUrl: {
+      type: String,
+      description: "SSL Commerz payment gateway URL - stored for pay-later scenarios",
+    },
     paymentGatewayData: {
       type: Schema.Types.Mixed,
     },

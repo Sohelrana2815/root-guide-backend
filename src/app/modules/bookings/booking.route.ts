@@ -10,11 +10,7 @@ import {
 
 const router = express.Router();
 
-// ============================================
 // 1. CREATE BOOKING (Tourist only)
-// ============================================
-// POST /api/bookings
-// Auth: Any authenticated user (will use touristId from token)
 router.post(
   "/",
   validateRequest(createBookingZodSchema),
@@ -22,75 +18,61 @@ router.post(
   BookingControllers.createBooking
 );
 
-// ============================================
+// 7. GET ALL BOOKINGS (Admin only)
+router.get(
+  "/admin/all-bookings",
+  checkAuth(Role.ADMIN),
+  BookingControllers.getAdminBookings
+);
+
 // 2. GET MY BOOKINGS (Tourist's own bookings)
-// ============================================
-// GET /api/bookings/my-bookings
-// Auth: Tourist role required
 router.get(
   "/my-bookings",
   checkAuth(Role.TOURIST),
   BookingControllers.getMyBookings
 );
 
-// ============================================
 // 3. GET GUIDE BOOKINGS
-// ============================================
-// GET /api/bookings/guide-bookings
-// Auth: Guide role required
-// Returns all bookings for the guide's tours
 router.get(
   "/guide-bookings",
-  checkAuth(Role.GUIDE || Role.ADMIN),
+  checkAuth(Role.GUIDE, Role.ADMIN),
   BookingControllers.getGuideBookings
 );
 
-// ============================================
-// 4. GET BOOKING BY ID
-// ============================================
-// GET /api/bookings/:id
-// Auth: Any authenticated user (must be tourist or guide of the booking)
+// Toggle Active/Deactive (Admin Only)
 
+router.patch(
+  "/admin/:id/toggle-active",
+  checkAuth(Role.ADMIN),
+  BookingControllers.toggleBookingActiveStatus
+);
+
+// Soft Delete (Admin Only)
+router.patch(
+  "/admin/:id/soft-delete",
+  checkAuth(Role.ADMIN),
+  BookingControllers.softDeleteBooking
+);
+// 4. GET BOOKING BY ID
 router.get(
   "/:id",
   checkAuth(Role.TOURIST, Role.GUIDE, Role.ADMIN),
   BookingControllers.getBookingById
 );
 
-// ============================================
-// 5. UPDATE BOOKING STATUS (Guide only)
-// ============================================
-// PATCH /api/bookings/:id/status
-// Auth: Guide role required
-// Updates booking status (Accept/Reject)
+// 5. UPDATE BOOKING STATUS (Guide adm ADMIN only)
 router.patch(
   "/:id/status",
   validateRequest(updateBookingStatusZodSchema),
-  checkAuth(Role.GUIDE),
+  checkAuth(Role.GUIDE, Role.ADMIN),
   BookingControllers.updateBookingStatus
 );
 
-// ============================================
 // 6. CANCEL BOOKING
-// ============================================
-// DELETE /api/bookings/:id
-// Auth: Tourist or Guide
 router.delete(
   "/:id",
   checkAuth(Role.TOURIST, Role.GUIDE),
   BookingControllers.cancelBooking
-);
-
-// ============================================
-// 7. GET ALL BOOKINGS (Admin only)
-// ============================================
-// GET /api/bookings/admin/all
-// Auth: Admin role required
-// Query filters: ?status=PENDING&tourId=xxx&guideId=yyy
-router.get(
-  "/admin/all",
-  checkAuth(Role.ADMIN),
-  BookingControllers.getAllBookings
 );
 
 export const BookingRoutes = router;

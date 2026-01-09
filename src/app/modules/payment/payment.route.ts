@@ -4,6 +4,8 @@ import { PaymentController } from "./payment.controller";
 const router = express.Router();
 
 router.post("/init-payment/:bookingId", PaymentController.initPayment);
+// Retrieve payment details (including paymentUrl) - for pay-later scenarios
+router.get("/booking/:bookingId", PaymentController.getPaymentByBookingId);
 // Payment gateways may POST or GET to callback URLs — support both methods
 router.post("/success", PaymentController.successPayment);
 router.get("/success", PaymentController.successPayment);
