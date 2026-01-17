@@ -9,14 +9,14 @@ const router = express.Router();
 router.get(
   "/admin-summary",
   checkAuth(Role.ADMIN),
-  StatsController.getAdminSummary
+  StatsController.getAdminSummary,
 );
 
 // Guide Dashboard Summary API
 router.get(
   "/guide-summary",
   checkAuth(Role.GUIDE),
-  StatsController.getGuideSummary
+  StatsController.getGuideSummary,
 );
 export const StatsRoutes = router;
 
@@ -24,5 +24,7 @@ export const StatsRoutes = router;
 router.get(
   "/tourist-summary",
   checkAuth(Role.TOURIST),
-  StatsController.getTouristSummary
+  StatsController.getTouristSummary,
 );
+
+router.get("/global-meta", StatsController.getGlobalMeta);

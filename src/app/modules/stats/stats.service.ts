@@ -296,8 +296,23 @@ const getTouristDashboardSummary = async (touristId: string) => {
   };
 };
 
+const getGlobalMeta = async () => {
+  const [touristsCount, guidesCount, uniqueCities] = await Promise.all([
+    User.countDocuments({ role: Role.TOURIST, isDeleted: { $ne: true } }),
+    User.countDocuments({ role: Role.GUIDE, isDeleted: { $ne: true } }),
+    Tour.distinct("city", { isDeleted: { $ne: true }, isActive: true }),
+  ]);
+
+  return {
+    totalTourists: touristsCount,
+    totalGuides: guidesCount,
+    totalDestinations: uniqueCities.length,
+  };
+};
+
 export const StatsService = {
   getAdminDashboardSummary,
   getGuideDashboardSummary,
   getTouristDashboardSummary,
+  getGlobalMeta,
 };

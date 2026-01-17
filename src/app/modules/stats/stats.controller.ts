@@ -42,8 +42,19 @@ const getTouristSummary = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getGlobalMeta = catchAsync(async (req: Request, res: Response) => {
+  const result = await StatsService.getGlobalMeta();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Global metadata fetched successfully",
+    data: result,
+  });
+});
+
 export const StatsController = {
   getAdminSummary,
   getGuideSummary,
   getTouristSummary,
+  getGlobalMeta,
 };
