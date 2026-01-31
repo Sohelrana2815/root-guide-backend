@@ -20,7 +20,7 @@ export const checkAuth =
 
       const verifiedToken = verifyToken(
         accessToken,
-        envVars.JWT_ACCESS_SECRET
+        envVars.JWT_ACCESS_SECRET,
       ) as JwtPayload;
 
       // Extract only the email from the JWT payload
@@ -37,7 +37,7 @@ export const checkAuth =
       ) {
         throw new AppError(
           httpStatus.BAD_REQUEST,
-          `User is ${isUserExist.userStatus}`
+          `User is ${isUserExist.userStatus}`,
         );
       }
       if (isUserExist.isDeleted) {
@@ -45,7 +45,7 @@ export const checkAuth =
       }
 
       if (!authRoles.includes(verifiedToken.role)) {
-        throw new AppError(403, "You are not permitted to view this route!!!");
+        throw new AppError(403, "You are not authorized to do this action.");
       }
 
       // FIX: Cast the verified token to our custom AuthPayload type with userId

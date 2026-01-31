@@ -2,11 +2,16 @@ import { Router } from "express";
 import { UserControllers } from "./user.controller";
 import { checkAuth } from "@/app/middlewares/checkAuth";
 import { Role } from "./user.interface";
-import { validateRequest } from "@/app/middlewares/validateRequest";
-import { updateUserZodSchema } from "./user.validation";
 import { multerUpload } from "@/app/config/multer.config";
+import { updateUserZodSchema } from "./user.validation";
+import { validateRequest } from "@/app/middlewares/validateRequest";
 
 const router = Router();
+
+// Public: High Rated guides
+
+router.get("/high-rated-guides", UserControllers.getHighRatedGuides);
+
 // get all users admin only
 router.get("/all-users", checkAuth(Role.ADMIN), UserControllers.getAllUsers);
 router.get("/me", checkAuth(...Object.values(Role)), UserControllers.getMe);
@@ -14,13 +19,13 @@ router.get("/me", checkAuth(...Object.values(Role)), UserControllers.getMe);
 router.get(
   "/guide/:id",
   checkAuth(...Object.values(Role)),
-  UserControllers.getGuideById
+  UserControllers.getGuideById,
 );
 
 router.get(
   "/guides-filter",
   checkAuth(Role.ADMIN),
-  UserControllers.getAllGuidesForFilter
+  UserControllers.getAllGuidesForFilter,
 );
 
 // router.get("/:id",checkAuth(...Object.values(Role)), UserControllers.getSingleUser);
@@ -28,12 +33,13 @@ router.get(
 // action change user status
 
 // update users all types of users can update their profile
+
 router.patch(
   "/:id",
   checkAuth(...Object.values(Role)),
   multerUpload.single("file"),
   validateRequest(updateUserZodSchema),
-  UserControllers.updateMyProfile
+  UserControllers.updateMyProfile,
 );
 
 // soft delte user
@@ -42,14 +48,14 @@ router.patch(
 router.patch(
   "/:id/role",
   checkAuth(Role.ADMIN),
-  UserControllers.updateUserRole
+  UserControllers.updateUserRole,
 );
 router.patch("/:id/block", checkAuth(Role.ADMIN), UserControllers.blockUser);
 
 router.patch(
   "/:id/unblock",
   checkAuth(Role.ADMIN),
-  UserControllers.unblockUser
+  UserControllers.unblockUser,
 );
 
 // soft delte user

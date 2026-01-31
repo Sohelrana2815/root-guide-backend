@@ -21,7 +21,7 @@ const createUser = async (payload: Partial<IUser>) => {
 
   const hashedPassword = await bcryptjs.hash(
     password as string,
-    Number(envVars.BCRYPT_SALT_ROUND)
+    Number(envVars.BCRYPT_SALT_ROUND),
   );
 
   const authProvider: IAuthProvider = {
@@ -42,6 +42,35 @@ const createUser = async (payload: Partial<IUser>) => {
   return user;
 };
 
+const createAdmin = async (payload: Partial<IUser>) => {
+  const { name, email, password, role, ...rest } = payload;
+  const isAdminExist = await User.findOne({ email });
+
+  if (isAdminExist) {
+    throw new AppError(httpStatus.BAD_REQUEST, "This Admin Already exist");
+  }
+
+  const hashedPassword = await bcryptjs.hash(
+    password as string,
+    Number(envVars.BCRYPT_SALT_ROUND),
+  );
+
+  const authProvider: IAuthProvider = {
+    provider: "credentials",
+    providerId: email as string,
+  };
+
+  const admin = await User.create({
+    name,
+    email,
+    password: hashedPassword,
+    role,
+    auths: [authProvider],
+    ...rest,
+  });
+  return admin;
+};
+
 const credentialsLogin = async (payload: Partial<IUser>) => {
   const { email, password } = payload;
   const isUserExist = await User.findOne({ email });
@@ -51,7 +80,7 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
   }
   const isPasswordMatch = await bcryptjs.compare(
     password as string,
-    isUserExist.password as string
+    isUserExist.password as string,
   );
 
   if (!isPasswordMatch) {
@@ -71,9 +100,8 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
 };
 
 const getNewAccessToken = async (refreshToken: string) => {
-  const newAccessToken = await createNewAccessTokenWithRefreshToken(
-    refreshToken
-  );
+  const newAccessToken =
+    await createNewAccessTokenWithRefreshToken(refreshToken);
 
   return {
     accessToken: newAccessToken,
@@ -82,13 +110,13 @@ const getNewAccessToken = async (refreshToken: string) => {
 const resetPassword = async (
   oldPassword: string,
   newPassword: string,
-  decodedToken: JwtPayload
+  decodedToken: JwtPayload,
 ) => {
   const user = (await User.findById(decodedToken.userId)) as JwtPayload;
 
   const isOldPasswordMatch = await bcryptjs.compare(
     oldPassword,
-    user?.password as string
+    user?.password as string,
   );
   if (!isOldPasswordMatch) {
     throw new AppError(httpStatus.UNAUTHORIZED, "Old password does not match");
@@ -100,6 +128,7 @@ const resetPassword = async (
 
 export const AuthServices = {
   createUser,
+  createAdmin,
   credentialsLogin,
   getNewAccessToken,
   resetPassword,

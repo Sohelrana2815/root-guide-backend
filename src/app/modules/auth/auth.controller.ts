@@ -22,7 +22,20 @@ const createUser = catchAsync(
       message: "User Created Successfully",
       data: user,
     });
-  }
+  },
+);
+const createAdmin = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    console.log("from controller", req.body);
+    const admin = await AuthServices.createAdmin(req.body);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.CREATED,
+      message: "Admin Created Successfully",
+      data: admin,
+    });
+  },
 );
 
 const credentialsLogin = catchAsync(
@@ -78,7 +91,7 @@ const credentialsLogin = catchAsync(
     //     httpOnly: true,
     //     secure: false,
     // })
-  }
+  },
 );
 
 const getNewAccessToken = catchAsync(
@@ -95,7 +108,7 @@ const getNewAccessToken = catchAsync(
       message: "User New Access Token Generated Successfully",
       data: tokenInfo,
     });
-  }
+  },
 );
 const logout = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -119,7 +132,7 @@ const logout = catchAsync(
       message: "User logout successfully",
       data: null,
     });
-  }
+  },
 );
 const resetPassword = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -130,7 +143,7 @@ const resetPassword = catchAsync(
     await AuthServices.resetPassword(
       oldPassword,
       newPassword,
-      decodedToken as JwtPayload
+      decodedToken as JwtPayload,
     );
     sendResponse(res, {
       success: true,
@@ -138,7 +151,7 @@ const resetPassword = catchAsync(
       message: "User password changed successfully",
       data: null,
     });
-  }
+  },
 );
 
 const googleCallbackController = catchAsync(
@@ -161,11 +174,12 @@ const googleCallbackController = catchAsync(
     setAuthCookie(res, tokenInfo);
 
     res.redirect(`${envVars.FRONTEND_URL}/${redirectTo}`);
-  }
+  },
 );
 
 export const AuthControllers = {
   createUser,
+  createAdmin,
   credentialsLogin,
   getNewAccessToken,
   logout,

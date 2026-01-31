@@ -59,6 +59,19 @@ const getAllUsers = async (query: UserListQuery = {}) => {
   };
 };
 
+const getHighRatedGuides = async () => {
+  const result = await User.find({
+    role: Role.GUIDE,
+    isDelete: { $ne: true },
+    userStatus: UserStatus.ACTIVE,
+    averageRating: { $gte: 4 },
+  })
+    .sort({ averageRating: -1 })
+    .limit(6)
+    .select("name photo bio expertise averageRating languages");
+  return result;
+};
+
 const getMe = async (userId: string) => {
   const user = await User.findById(userId).select("-password");
   return {
@@ -88,7 +101,7 @@ const getAllGuidesForFilter = async () => {
 const updateMyProfile = async (
   userId: string,
   payload: Partial<IUser>,
-  decodedToken: JwtPayload
+  decodedToken: JwtPayload,
 ) => {
   const isUserExist = await User.findById(userId);
 
@@ -113,7 +126,7 @@ const updateMyProfile = async (
   if (requesterRole !== Role.ADMIN && requesterId !== String(userId)) {
     throw new AppError(
       httpStatus.FORBIDDEN,
-      "You are not authorized to update this user"
+      "You are not authorized to update this user",
     );
   }
 
@@ -131,7 +144,7 @@ const updateMyProfile = async (
   if (payload.password) {
     payload.password = await bcryptjs.hash(
       payload.password,
-      Number(envVars.BCRYPT_SALT_ROUND)
+      Number(envVars.BCRYPT_SALT_ROUND),
     );
   }
 
@@ -149,7 +162,7 @@ const updateMyProfile = async (
       // eslint-disable-next-line no-console
       console.warn(
         "Failed to delete previous user photo from Cloudinary:",
-        err
+        err,
       );
     }
   }
@@ -160,21 +173,21 @@ const updateMyProfile = async (
 const updateUserRole = async (
   userId: string,
   targetRole: Role | string,
-  decodedToken: JwtPayload
+  decodedToken: JwtPayload,
 ) => {
   // only admin can change role
 
   if ((decodedToken as any).role !== Role.ADMIN) {
     throw new AppError(
       httpStatus.FORBIDDEN,
-      "You are not authorized to perform this action"
+      "You are not authorized to perform this action",
     );
   }
   const normalizedRole = String(targetRole).toUpperCase();
   if (!Object.values(Role).includes(normalizedRole as Role)) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      `Invalid role. Allowed roles: ${Object.values(Role).join(", ")}`
+      `Invalid role. Allowed roles: ${Object.values(Role).join(", ")}`,
     );
   }
   const user = await User.findById(userId);
@@ -188,7 +201,7 @@ const updateUserRole = async (
   const updated = await User.findByIdAndUpdate(
     userId,
     { role: normalizedRole as Role },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
   return updated;
 };
@@ -204,7 +217,7 @@ const blockUser = async (userId: string, decodedToken: JwtPayload) => {
   return await User.findByIdAndUpdate(
     userId,
     { userStatus: UserStatus.BLOCKED },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 };
 
@@ -219,7 +232,7 @@ const unblockUser = async (userId: string, decodedToken: JwtPayload) => {
   return await User.findByIdAndUpdate(
     userId,
     { userStatus: UserStatus.ACTIVE },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 };
 
@@ -239,7 +252,7 @@ const deleteUser = async (userId: string, decodedToken: JwtPayload) => {
   const deletedUser = await User.findByIdAndUpdate(
     userId,
     { isDeleted: true },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   return deletedUser;
@@ -247,6 +260,7 @@ const deleteUser = async (userId: string, decodedToken: JwtPayload) => {
 
 export const UserServices = {
   getAllUsers,
+  getHighRatedGuides,
   updateMyProfile,
   getAllGuidesForFilter,
   deleteUser,

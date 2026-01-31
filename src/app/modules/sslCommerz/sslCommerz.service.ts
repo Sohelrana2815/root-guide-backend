@@ -56,7 +56,7 @@ const sslPaymentInit = async (payload: ISSLCommerz) => {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
-        timeout: 10000,
+        timeout: 30000,
       }
     );
 

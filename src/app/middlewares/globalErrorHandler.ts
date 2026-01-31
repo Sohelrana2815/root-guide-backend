@@ -35,7 +35,7 @@ export const globalErrorHandler = async (
   let statusCode = 500;
   let message = "Something Went Wrong!!";
 
-  //Duplicate error
+  //Duplicat!validation.successe error
   if (err.code === 11000) {
     const simplifiedError = handlerDuplicateError(err);
     statusCode = simplifiedError.statusCode;

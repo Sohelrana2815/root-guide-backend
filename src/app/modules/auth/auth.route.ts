@@ -1,6 +1,9 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { validateRequest } from "@/app/middlewares/validateRequest";
-import { createUserZodSchema } from "../user/user.validation";
+import {
+  createAdminZodSchema,
+  createUserZodSchema,
+} from "../user/user.validation";
 import { AuthControllers } from "./auth.controller";
 import { checkAuth } from "@/app/middlewares/checkAuth";
 import { Role } from "../user/user.interface";
@@ -11,7 +14,15 @@ const router = Router();
 router.post(
   "/register",
   validateRequest(createUserZodSchema),
-  AuthControllers.createUser
+  AuthControllers.createUser,
+  checkAuth(Role.GUIDE, Role.TOURIST),
+);
+
+router.post(
+  "/create-admin",
+  validateRequest(createAdminZodSchema),
+  checkAuth(Role.ADMIN),
+  AuthControllers.createAdmin
 );
 
 router.post("/login", AuthControllers.credentialsLogin);
@@ -20,7 +31,7 @@ router.post("/logout", AuthControllers.logout);
 router.post(
   "/reset-password",
   checkAuth(...Object.values(Role)),
-  AuthControllers.resetPassword
+  AuthControllers.resetPassword,
 );
 
 //  /booking -> /login -> succesful google login -> /booking frontend
@@ -33,14 +44,14 @@ router.get(
       scope: ["profile", "email"],
       state: redirect as string,
     })(req, res, next);
-  }
+  },
 );
 
 // api/v1/auth/google/callback?state=/booking
 router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
-  AuthControllers.googleCallbackController
+  AuthControllers.googleCallbackController,
 );
 
 export const AuthRoutes = router;

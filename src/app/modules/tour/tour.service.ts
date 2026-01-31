@@ -29,7 +29,7 @@ interface TourListQuery {
 }
 const buildTourListFilters = (
   query: TourListQuery,
-  baseFilter: Record<string, unknown>
+  baseFilter: Record<string, unknown>,
 ) => {
   const searchTerm =
     typeof query.searchTerm === "string" ? query.searchTerm.trim() : undefined;
@@ -146,7 +146,7 @@ const getAllTours = async (query: TourListQuery = {}) => {
 
 const getMyTours = async (
   guideId: Types.ObjectId,
-  query: TourListQuery = {}
+  query: TourListQuery = {},
 ) => {
   const { page, limit, skip } = parsePagination(query);
   const filter = buildTourListFilters(query, { guideId, ...notDeletedFilter });
@@ -217,7 +217,7 @@ const getTourById = async (tourId: string) => {
 const updateTour = async (
   tourId: string,
   guideId: Types.ObjectId,
-  payload: Partial<ITour>
+  payload: Partial<ITour>,
 ) => {
   const tour = await Tour.findById(tourId);
 
@@ -228,7 +228,7 @@ const updateTour = async (
   if (tour.guideId.toString() !== guideId.toString()) {
     throw new AppError(
       httpStatus.FORBIDDEN,
-      "You can only update your own created tours"
+      "You can only update your own created tours",
     );
   }
 
@@ -258,7 +258,7 @@ const deActivateTour = async (tourId: string, guideId: Types.ObjectId) => {
   if (tour.guideId.toString() !== guideId.toString()) {
     throw new AppError(
       httpStatus.FORBIDDEN,
-      "You can only deactivate your own tours"
+      "You can only deactivate your own tours",
     );
   }
 
@@ -283,7 +283,7 @@ const reactivateTour = async (tourId: string, guideId: Types.ObjectId) => {
   if (tour.guideId.toString() !== guideId.toString()) {
     throw new AppError(
       httpStatus.FORBIDDEN,
-      "You can only reactivate your own tours"
+      "You can only reactivate your own tours",
     );
   }
 
@@ -301,7 +301,7 @@ const reactivateTour = async (tourId: string, guideId: Types.ObjectId) => {
 const softDeleteTour = async (
   tourId: string,
   guideId: Types.ObjectId,
-  isAdmin = false
+  isAdmin = false,
 ) => {
   const tour = await Tour.findById(tourId);
 
@@ -313,7 +313,7 @@ const softDeleteTour = async (
   if (!isAdmin && tour.guideId.toString() !== guideId.toString()) {
     throw new AppError(
       httpStatus.FORBIDDEN,
-      "You can only soft delete your own tours"
+      "You can only soft delete your own tours",
     );
   }
 
@@ -325,7 +325,7 @@ const softDeleteTour = async (
 const deleteTour = async (
   tourId: string,
   guideId: Types.ObjectId,
-  isAdmin = false
+  isAdmin = false,
 ) => {
   const tour = await Tour.findById(tourId);
 
@@ -337,7 +337,7 @@ const deleteTour = async (
   if (!isAdmin && tour.guideId.toString() !== guideId.toString()) {
     throw new AppError(
       httpStatus.FORBIDDEN,
-      "You can only delete your own tours"
+      "You can only delete your own tours",
     );
   }
 

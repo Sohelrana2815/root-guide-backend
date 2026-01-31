@@ -20,6 +20,16 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getHighRatedGuides = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserServices.getHighRatedGuides();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "High rated guides fetched successfully",
+    data: result,
+  });
+});
+
 const getMe = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const decodedToken = req.user as JwtPayload;
@@ -31,7 +41,7 @@ const getMe = catchAsync(
       message: "MY profile Retrieved Successfully",
       data: result.data,
     });
-  }
+  },
 );
 
 const getGuideById = catchAsync(
@@ -44,7 +54,7 @@ const getGuideById = catchAsync(
       message: "Guide profile Retrieved Successfully",
       data: result.data,
     });
-  }
+  },
 );
 
 // get all guides for filter
@@ -58,14 +68,14 @@ const getAllGuidesForFilter = catchAsync(
       message: "Guides fetched successfully for filter",
       data: result,
     });
-  }
+  },
 );
 const updateMyProfile = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     // console.log(req.body, "From controller");
     const userId = req.params.id;
     const verifiedToken = req.user as JwtPayload;
-    const bodyData = req.body.data ? JSON.parse(req.body.data) : {};
+    // const bodyData = req.body.data ? JSON.parse(req.body.data) : {};
     const payload = {
       ...req.body,
       photo: (req as any).file?.path,
@@ -74,7 +84,7 @@ const updateMyProfile = catchAsync(
     const user = await UserServices.updateMyProfile(
       userId,
       payload,
-      verifiedToken
+      verifiedToken,
     );
 
     sendResponse(res, {
@@ -83,7 +93,7 @@ const updateMyProfile = catchAsync(
       message: "User updated Successfully",
       data: user,
     });
-  }
+  },
 );
 
 export const updateUserRole = catchAsync(
@@ -94,7 +104,7 @@ export const updateUserRole = catchAsync(
     if (!bodyRole) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        "role is required in request body"
+        "role is required in request body",
       );
     }
 
@@ -105,7 +115,7 @@ export const updateUserRole = catchAsync(
     if (!Object.values(Role).includes(desiredRole as Role)) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        `Invalid role. Allowed roles: ${Object.values(Role).join(", ")}`
+        `Invalid role. Allowed roles: ${Object.values(Role).join(", ")}`,
       );
     }
 
@@ -113,14 +123,14 @@ export const updateUserRole = catchAsync(
     if (!verifiedToken) {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
-        "Missing authentication token"
+        "Missing authentication token",
       );
     }
 
     const result = await UserServices.updateUserRole(
       userId,
       desiredRole as Role,
-      verifiedToken
+      verifiedToken,
     );
 
     sendResponse(res, {
@@ -129,7 +139,7 @@ export const updateUserRole = catchAsync(
       message: `User role updated to ${desiredRole} successfully`,
       data: result,
     });
-  }
+  },
 );
 
 const blockUser = catchAsync(async (req: Request, res: Response) => {
@@ -169,11 +179,12 @@ const deleteUser = catchAsync(
       message: "User soft deleted successfully",
       data: result,
     });
-  }
+  },
 );
 
 export const UserControllers = {
   getAllUsers,
+  getHighRatedGuides,
   getAllGuidesForFilter,
   getGuideById,
   updateMyProfile,

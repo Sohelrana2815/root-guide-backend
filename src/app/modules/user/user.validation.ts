@@ -48,8 +48,38 @@ export const createUserZodSchema = z
     {
       message: "At least one expertise is required for guides.",
       path: ["expertise"],
-    }
+    },
   );
+
+export const createAdminZodSchema = z.object({
+  name: z
+    .string({
+      error: "Name is required",
+    })
+    .trim()
+    .min(4, "Name must be at least 4 characters long")
+    .max(12, "Name must be at most 12 characters long"),
+
+  email: z.email({ error: "Email is required" }),
+  role: z.enum(Role, {
+    error: "Admin role is required",
+  }),
+  password: z
+    .string()
+    .min(5, { error: "Password must be at least 6 characters" })
+    // Must have at least 1 uppercase letter
+    .regex(/^(?=.*[A-Z]).+$/, {
+      error: "Password must contain at least 1 uppercase letter",
+    })
+    // Must have at least 1 digit
+    .regex(/^(?=.*\d).+$/, {
+      error: "Password must contain at least one digit",
+    })
+    // Must have at least 1 special character (!@#$%^&*)
+    .regex(/^(?=.*[!@#$%^&*]).+$/, {
+      error: "Password must contain at least one special character (!@#$%^&*)",
+    }),
+});
 
 export const updateUserZodSchema = z.object({
   name: z
@@ -62,7 +92,7 @@ export const updateUserZodSchema = z.object({
     .min(6, { error: "Password must be at least 6 characters" })
     .regex(
       /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[\s\S]{6,}$/,
-      "Password must contain at least 1 uppercase letter, 1 digit, and 1 special character (!@#$%^&*)"
+      "Password must contain at least 1 uppercase letter, 1 digit, and 1 special character (!@#$%^&*)",
     )
     .optional(),
   // Must have at least 1 uppercase letter
