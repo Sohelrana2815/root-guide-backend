@@ -13,7 +13,7 @@ router.post(
   multerUpload.single("file"),
   validateRequest(createTourZodSchema),
 
-  TourControllers.createTour
+  TourControllers.createTour,
 );
 
 // see all tours admin only
@@ -24,10 +24,12 @@ router.get("/", TourControllers.getTours);
 router.get(
   "/my-tours",
   checkAuth(Role.GUIDE || Role.ADMIN),
-  TourControllers.getMyTours
+  TourControllers.getMyTours,
 );
 
 router.get("/with-guide", TourControllers.getToursWithGuidInfo);
+router.get("/popular-cities", TourControllers.getPopularCities);
+router.get("/categories", TourControllers.getCategories);
 // update tour guide only
 router.patch(
   "/:id",
@@ -35,40 +37,40 @@ router.patch(
   checkAuth(Role.GUIDE),
   multerUpload.single("file"),
   validateRequest(updateTourZodSchema),
-  TourControllers.updateTour
+  TourControllers.updateTour,
 );
 
 // view single tour by id all types of users can view tour details
 router.get(
   "/:id",
   checkAuth(...Object.values(Role)),
-  TourControllers.getTourById
+  TourControllers.getTourById,
 );
 
 // deactivate tour and guide only
 router.patch(
   "/:id/deactivate",
   checkAuth(Role.GUIDE || Role.ADMIN),
-  TourControllers.deActivateTour
+  TourControllers.deActivateTour,
 );
 
 // reactivate tour and guide only
 router.patch(
   "/:id/reactivate",
   checkAuth(Role.GUIDE || Role.ADMIN),
-  TourControllers.reactivateTour
+  TourControllers.reactivateTour,
 );
 
 router.patch(
   "/softDelete/:id",
   checkAuth(Role.GUIDE, Role.ADMIN),
-  TourControllers.softDeleteTour
+  TourControllers.softDeleteTour,
 );
 
 router.delete(
   "/:id",
   checkAuth(Role.GUIDE || Role.ADMIN),
-  TourControllers.deleteTour
+  TourControllers.deleteTour,
 );
 
 export const TourRoutes = router;

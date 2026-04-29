@@ -214,6 +214,16 @@ const getTourById = async (tourId: string) => {
   return tour;
 };
 
+const getPopularCities = async () => {
+  const cities = await Tour.distinct("city");
+  return cities;
+};
+
+const getCategories = async () => {
+  const categories = await Tour.distinct("category");
+  return categories;
+};
+
 const updateTour = async (
   tourId: string,
   guideId: Types.ObjectId,
@@ -351,6 +361,8 @@ export const TourServices = {
   getAllTours,
   getMyTours,
   getToursWithGuidInfo,
+  getPopularCities,
+  getCategories,
   getTourById,
   updateTour,
   deActivateTour,

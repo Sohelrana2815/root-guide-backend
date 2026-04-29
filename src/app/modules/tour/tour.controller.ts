@@ -61,7 +61,7 @@ const getMyTours = catchAsync(async (req: Request, res: Response) => {
 
   const result = await TourServices.getMyTours(
     authUser.userId,
-    req.query as any
+    req.query as any,
   );
   sendResponse(res, {
     statusCode: 200,
@@ -98,6 +98,26 @@ const getTourById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getPopularCities = catchAsync(async (req: Request, res: Response) => {
+  const result = await TourServices.getPopularCities();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Popular tours retrieved successfully",
+    data: result,
+  });
+});
+
+const getCategories = catchAsync(async (req: Request, res: Response) => {
+  const result = await TourServices.getCategories();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Category retrieved successfully",
+    data: result,
+  });
+});
+
 const updateTour = catchAsync(async (req: Request, res: Response) => {
   const authUser = req.user as AuthPayload;
 
@@ -114,7 +134,7 @@ const updateTour = catchAsync(async (req: Request, res: Response) => {
   const result = await TourServices.updateTour(
     id,
     authUser.userId,
-    updatePayload
+    updatePayload,
   );
 
   sendResponse(res, {
@@ -173,7 +193,7 @@ const softDeleteTour = catchAsync(async (req: Request, res: Response) => {
   const result = await TourServices.softDeleteTour(
     id,
     authUser.userId,
-    isAdmin
+    isAdmin,
   );
 
   sendResponse(res, {
@@ -207,6 +227,8 @@ export const TourControllers = {
   getTours,
   getAllTours,
   getToursWithGuidInfo,
+  getPopularCities,
+  getCategories,
   getTourById,
   getMyTours,
   updateTour,
